@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material 3 Dark Theme Style Overrides -->
+    
+    <!-- Full-Screen Style for Dark Theme -->
+    <style name="AppTheme.FullScreen" parent="AppTheme">
+        <!-- Modern edge-to-edge implementation for dark theme -->
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+    </style>
+    
+    <!-- High Contrast Theme for Accessibility (Dark) -->
+    <style name="AppTheme.HighContrast" parent="AppTheme">
+        <item name="colorPrimary">@color/md_theme_dark_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_dark_onPrimary</item>
+        <item name="colorOutline">#FFFFFF</item>
+        <item name="colorOutlineVariant">#CCCCCC</item>
+    </style>
+</resources>
+

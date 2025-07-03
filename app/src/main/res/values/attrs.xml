@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Custom attributes for Material 3 theming -->
+    
+    <!-- Dynamic color support attributes -->
+    <attr name="isDynamicColorAvailable" format="boolean" />
+    <attr name="isLightTheme" format="boolean" />
+    
+    <!-- Custom color attributes for extended palette -->
+    <attr name="colorSurfaceDim" format="color" />
+    <attr name="colorSurfaceBright" format="color" />
+    <attr name="colorSurfaceContainerLowest" format="color" />
+    <attr name="colorSurfaceContainerLow" format="color" />
+    <attr name="colorSurfaceContainer" format="color" />
+    <attr name="colorSurfaceContainerHigh" format="color" />
+    <attr name="colorSurfaceContainerHighest" format="color" />
+    
+    <!-- Custom component attributes -->
+    <attr name="elevationLevel0" format="dimension" />
+    <attr name="elevationLevel1" format="dimension" />
+    <attr name="elevationLevel2" format="dimension" />
+    <attr name="elevationLevel3" format="dimension" />
+    <attr name="elevationLevel4" format="dimension" />
+    <attr name="elevationLevel5" format="dimension" />
+    
+    <!-- Shape attributes -->
+    <attr name="shapeCornerExtraSmall" format="dimension" />
+    <attr name="shapeCornerSmall" format="dimension" />
+    <attr name="shapeCornerMedium" format="dimension" />
+    <attr name="shapeCornerLarge" format="dimension" />
+    <attr name="shapeCornerExtraLarge" format="dimension" />
+    
+    <!-- Motion attributes -->
+    <attr name="motionDurationShort1" format="integer" />
+    <attr name="motionDurationShort2" format="integer" />
+    <attr name="motionDurationShort3" format="integer" />
+    <attr name="motionDurationShort4" format="integer" />
+    <attr name="motionDurationMedium1" format="integer" />
+    <attr name="motionDurationMedium2" format="integer" />
+    <attr name="motionDurationMedium3" format="integer" />
+    <attr name="motionDurationMedium4" format="integer" />
+    <attr name="motionDurationLong1" format="integer" />
+    <attr name="motionDurationLong2" format="integer" />
+    <attr name="motionDurationLong3" format="integer" />
+    <attr name="motionDurationLong4" format="integer" />
+    
+    <!-- Easing attributes -->
+    <attr name="motionEasingStandard" format="string" />
+    <attr name="motionEasingDecelerate" format="string" />
+    <attr name="motionEasingAccelerate" format="string" />
+    <attr name="motionEasingEmphasized" format="string" />
+</resources>
+

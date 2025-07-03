@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HD STREAMZ TV</string>
+    
+    <!-- Main navigation tab titles -->
+    <string name="tab_events">Events</string>
+    <string name="tab_live_tv">Live TV</string>
+    <string name="tab_live_radio">Live Radio</string>
+    <string name="tab_favorite">Favorite</string>
+
+    <!-- Content descriptions for accessibility -->
+    <string name="content_description_search">Search</string>
+    <string name="content_description_notifications">Notifications</string>
+</resources>
