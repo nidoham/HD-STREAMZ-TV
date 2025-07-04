@@ -67,17 +67,17 @@ public class TvGridAdapter extends ListAdapter<Channel, TvGridAdapter.ViewHolder
 
         // Set click listener for the item
         holder.itemView.setOnClickListener(v -> {
-            setRepository(channel.getChannelId());
+            setRepository(channel);
         });
     }
     
-    public void setRepository(String channelId){
+    public void setRepository(Channel channel){
         ChannelRepository repository = new ChannelRepository();
 
-        repository.fetchChannelStreams(channelId , new ChannelRepository.ChannelCallback() {
+        repository.fetchChannelStreams(channel.getChannelId() , new ChannelRepository.ChannelCallback() {
             @Override
             public void onSuccess(List<ChannelUrl> urls) {
-                MultipleLinkDialog.show(context, urls);
+                MultipleLinkDialog.show(context, urls, channel.getChannelName());
             }
 
             @Override

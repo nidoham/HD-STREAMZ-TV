@@ -1,10 +1,284 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/coordinator"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+<androidx.constraintlayout.widget.ConstraintLayout
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
+     xmlns:tools="http://schemas.android.com/tools"
+     android:layout_height="match_parent"
+     android:layout_width="match_parent"
+     android:background="@android:color/black">
 
-   
+    <androidx.media3.ui.PlayerView
+         android:layout_height="0dp"
+         android:layout_width="0dp"
+         app:use_controller="false"
+         app:layout_constraintTop_toTopOf="parent"
+         app:layout_constraintStart_toStartOf="parent"
+         app:layout_constraintEnd_toEndOf="parent"
+         app:layout_constraintBottom_toBottomOf="parent"
+         android:id="@+id/player_view" />
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+    <androidx.constraintlayout.widget.ConstraintLayout
+         android:layout_height="match_parent"
+         android:layout_width="match_parent"
+         android:background="@android:color/transparent"
+         android:id="@+id/controls_container">
+
+        <View
+             android:layout_height="100dp"
+             android:layout_width="0dp"
+             android:background="@drawable/gradient_top_overlay"
+             app:layout_constraintTop_toTopOf="parent"
+             app:layout_constraintStart_toStartOf="parent"
+             app:layout_constraintEnd_toEndOf="parent"
+             android:id="@+id/top_gradient" />
+
+        <View
+             android:layout_height="140dp"
+             android:layout_width="0dp"
+             android:background="@drawable/gradient_bottom_overlay"
+             app:layout_constraintStart_toStartOf="parent"
+             app:layout_constraintEnd_toEndOf="parent"
+             app:layout_constraintBottom_toBottomOf="parent"
+             android:id="@+id/bottom_gradient" />
+
+        <LinearLayout
+             android:layout_height="wrap_content"
+             android:layout_width="0dp"
+             android:layout_marginEnd="20dp"
+             android:gravity="center_vertical"
+             app:layout_constraintTop_toTopOf="parent"
+             android:orientation="horizontal"
+             app:layout_constraintStart_toStartOf="parent"
+             app:layout_constraintEnd_toEndOf="parent"
+             android:layout_marginStart="20dp"
+             android:id="@+id/top_bar">
+
+            <TextView
+                 android:layout_height="wrap_content"
+                 android:layout_width="0dp"
+                 android:textSize="16sp"
+                 android:textColor="@android:color/white"
+                 android:layout_weight="1"
+                 tools:ignore="HardcodedText"
+                 android:id="@+id/channel_title_text"
+                 android:text="SONY SAB (1280x720)"
+                 android:textStyle="normal" />
+
+            <ImageView
+                 android:layout_height="40dp"
+                 android:layout_width="40dp"
+                 android:layout_marginEnd="16dp"
+                 android:contentDescription="@string/resize_screen"
+                 android:src="@drawable/ic_fullscreen_exit"
+                 android:padding="8dp"
+                 app:tint="@android:color/white"
+                 android:id="@+id/resize_button" />
+
+            <ImageView
+                 android:layout_height="40dp"
+                 android:layout_width="40dp"
+                 android:contentDescription="@string/close"
+                 android:src="@drawable/ic_close"
+                 android:padding="8dp"
+                 app:tint="@android:color/white"
+                 android:id="@+id/close_button" />
+
+        </LinearLayout>
+
+        <LinearLayout
+             android:layout_height="wrap_content"
+             android:layout_width="wrap_content"
+             android:gravity="center"
+             app:layout_constraintTop_toTopOf="parent"
+             android:layout_marginHorizontal="20dp"
+             android:orientation="horizontal"
+             app:layout_constraintStart_toStartOf="parent"
+             app:layout_constraintEnd_toEndOf="parent"
+             app:layout_constraintBottom_toBottomOf="parent"
+             android:id="@+id/center_controls">
+
+            <View
+                 android:layout_height="1dp"
+                 android:layout_width="0dp"
+                 android:layout_weight="1" />
+
+            <ImageView
+                 android:layout_height="64dp"
+                 android:layout_width="64dp"
+                 android:layout_marginEnd="32dp"
+                 android:contentDescription="@string/rewind_10_seconds"
+                 android:src="@drawable/ic_rewind_10"
+                 android:padding="16dp"
+                 app:tint="@android:color/white"
+                 android:id="@+id/rewind_button" />
+
+            <View
+                 android:layout_height="1dp"
+                 android:layout_width="0dp"
+                 android:layout_weight="4" />
+
+            <ImageView
+                 android:layout_height="80dp"
+                 android:layout_width="80dp"
+                 android:contentDescription="@string/pause"
+                 android:src="@drawable/ic_pause"
+                 android:padding="12dp"
+                 app:tint="@android:color/white"
+                 android:id="@+id/play_pause_button" />
+
+            <View
+                 android:layout_height="1dp"
+                 android:layout_width="0dp"
+                 android:layout_weight="4" />
+
+            <ImageView
+                 android:layout_height="64dp"
+                 android:layout_width="64dp"
+                 android:contentDescription="@string/forward_10_seconds"
+                 android:src="@drawable/ic_forward_10"
+                 android:padding="16dp"
+                 app:tint="@android:color/white"
+                 android:layout_marginStart="32dp"
+                 android:id="@+id/forward_button" />
+
+            <View
+                 android:layout_height="1dp"
+                 android:layout_width="0dp"
+                 android:layout_weight="1" />
+
+        </LinearLayout>
+
+        <LinearLayout
+             android:layout_height="wrap_content"
+             android:layout_width="0dp"
+             android:layout_marginBottom="20dp"
+             android:layout_marginEnd="20dp"
+             android:gravity="center_vertical"
+             android:orientation="vertical"
+             app:layout_constraintStart_toStartOf="parent"
+             app:layout_constraintEnd_toEndOf="parent"
+             app:layout_constraintBottom_toBottomOf="parent"
+             android:layout_marginStart="20dp"
+             android:id="@+id/bottom_controls">
+
+            <LinearLayout
+                 android:layout_height="wrap_content"
+                 android:layout_width="match_parent"
+                 android:gravity="center_vertical"
+                 android:orientation="horizontal">
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:gravity="center"
+                     android:textSize="14sp"
+                     android:textColor="@android:color/white"
+                     android:minWidth="60dp"
+                     tools:ignore="HardcodedText"
+                     android:id="@+id/current_time_text"
+                     android:text="00:00:31" />
+
+                <SeekBar
+                     android:layout_height="wrap_content"
+                     android:layout_width="0dp"
+                     android:layout_marginEnd="12dp"
+                     android:max="100"
+                     android:progressBackgroundTint="#40FFFFFF"
+                     android:thumbTint="@android:color/white"
+                     android:progressTint="@android:color/white"
+                     style="@style/Widget.AppCompat.SeekBar"
+                     android:layout_marginStart="12dp"
+                     android:progress="77"
+                     android:layout_weight="1"
+                     android:id="@+id/seek_bar" />
+
+                <TextView
+                     android:layout_height="wrap_content"
+                     android:layout_width="wrap_content"
+                     android:gravity="center"
+                     android:textSize="14sp"
+                     android:textColor="@android:color/white"
+                     android:minWidth="60dp"
+                     tools:ignore="HardcodedText"
+                     android:id="@+id/total_time_text"
+                     android:text="00:00:40" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                 android:layout_height="wrap_content"
+                 android:layout_width="match_parent"
+                 android:gravity="center_vertical"
+                 android:orientation="horizontal"
+                 android:layout_marginTop="16dp">
+
+                <View
+                     android:layout_height="1dp"
+                     android:layout_width="0dp"
+                     android:layout_weight="1" />
+
+                <ImageView
+                     android:layout_height="40dp"
+                     android:layout_width="40dp"
+                     android:contentDescription="@string/lock_screen"
+                     android:src="@drawable/ic_lock"
+                     android:padding="8dp"
+                     app:tint="@android:color/white"
+                     android:id="@+id/lock_button" />
+
+                <View
+                     android:layout_height="1dp"
+                     android:layout_width="0dp"
+                     android:layout_weight="1" />
+
+                <ImageView
+                     android:layout_height="40dp"
+                     android:layout_width="40dp"
+                     android:layout_marginEnd="20dp"
+                     android:contentDescription="@string/volume"
+                     android:src="@drawable/ic_volume_up"
+                     android:padding="8dp"
+                     app:tint="@android:color/white"
+                     android:id="@+id/volume_button" />
+
+                <View
+                     android:layout_height="1dp"
+                     android:layout_width="0dp"
+                     android:layout_weight="1" />
+
+                <ImageView
+                     android:layout_height="40dp"
+                     android:layout_width="40dp"
+                     android:layout_marginEnd="20dp"
+                     android:contentDescription="@string/enter_fullscreen"
+                     android:src="@drawable/ic_fullscreen"
+                     android:padding="8dp"
+                     app:tint="@android:color/white"
+                     android:id="@+id/fullscreen_button" />
+
+                <View
+                     android:layout_height="1dp"
+                     android:layout_width="0dp"
+                     android:layout_weight="1" />
+
+                <ImageView
+                     android:layout_height="40dp"
+                     android:layout_width="40dp"
+                     android:contentDescription="@string/settings"
+                     android:src="@drawable/ic_settings"
+                     android:padding="8dp"
+                     app:tint="@android:color/white"
+                     android:id="@+id/settings_button" />
+
+                <View
+                     android:layout_height="1dp"
+                     android:layout_width="0dp"
+                     android:layout_weight="1" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

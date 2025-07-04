@@ -16,9 +16,10 @@ import java.util.List;
 
 public class MultipleLinkDialog {
     
+    private static String NAME = "";
     private static String URL = "";
 
-    public static void show(Context context, List<ChannelUrl> urls) {
+    public static void show(Context context, List<ChannelUrl> urls, String channelName) {
         Dialog dialog = new Dialog(context);
         dialog.setContentView(R.layout.dialog_multiple_links);
         dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
@@ -32,47 +33,48 @@ public class MultipleLinkDialog {
         int length = urls.size();
         
         if(length == 1) {
-        	String link = urls.get(0).getTittle();
+        	NAME = urls.get(0).getTittle();
             URL = urls.get(0).getLink();
-            link1.setText(link);
+            link1.setText(NAME);
         } else {
             link1.setVisibility(View.GONE);
         }
         
         if(length == 2) {
-        	final String link = urls.get(1).getTittle();
+        	NAME = urls.get(1).getTittle();
             URL = urls.get(1).getLink();
-            link2.setText(link);
+            link2.setText(NAME);
         } else {
             link2.setVisibility(View.GONE);
         }
         
         if(length == 3) {
-        	String link = urls.get(2).getTittle();
+        	NAME = urls.get(2).getTittle();
             URL = urls.get(2).getLink();
-            link3.setText(link);
+            link3.setText(NAME);
         } else {
             link3.setVisibility(View.GONE);
         }
         
         if(length == 4) {
-        	String link = urls.get(3).getTittle();
+        	NAME = urls.get(3).getTittle();
             URL = urls.get(3).getLink();
-            link4.setText(link);
+            link4.setText(NAME);
         } else {
             link4.setVisibility(View.GONE);
         }
         
         if(length == 5) {
-        	String link = urls.get(4).getTittle();
+        	NAME = urls.get(4).getTittle();
             URL = urls.get(4).getLink();
-            link5.setText(link);
+            link5.setText(NAME);
         } else {
             link5.setVisibility(View.GONE);
         }
 
         View.OnClickListener listener = v -> {
             Intent intent = new Intent();
+            intent.putExtra("name", channelName);
             intent.putExtra("link", URL);
             intent.setClass(context, PlayerActivity.class);
             context.startActivity(intent);

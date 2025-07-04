@@ -20,8 +20,8 @@ android {
     }
     
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     buildTypes {
@@ -52,4 +52,22 @@ dependencies {
     
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.5.1")
+    
+    // Use a variable for the version to keep them in sync
+    val media3Version = "1.3.1"
+
+    // The core player engine (required)
+    implementation("androidx.media3:media3-exoplayer:$media3Version")
+
+    // The UI components, including PlayerView (required for the view)
+    implementation("androidx.media3:media3-ui:$media3Version")
+
+    // For background playback and media session integration (highly recommended)
+    implementation("androidx.media3:media3-session:$media3Version")
+    
+    // For HLS streaming support (optional, but common)
+    implementation("androidx.media3:media3-exoplayer-hls:$media3Version")
+
+    // For DASH streaming support (optional, but common)
+    implementation("androidx.media3:media3-exoplayer-dash:$media3Version")
 }
