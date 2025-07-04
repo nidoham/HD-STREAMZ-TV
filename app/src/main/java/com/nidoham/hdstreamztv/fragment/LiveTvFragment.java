@@ -112,6 +112,8 @@ public class LiveTvFragment extends Fragment {
             }
         });
     }
+    
+    
 
     private int dpToPx(int dp) {
         Resources r = getResources();

@@ -1,6 +1,7 @@
 package com.nidoham.hdstreamztv.adapter;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,8 +16,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.nidoham.hdstreamztv.R;
+import com.nidoham.hdstreamztv.dialog.MultipleLinkDialog;
 import com.nidoham.hdstreamztv.model.Channel;
 
+import com.nidoham.hdstreamztv.model.ChannelUrl;
+import com.nidoham.hdstreamztv.repository.ChannelRepository;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -62,8 +67,23 @@ public class TvGridAdapter extends ListAdapter<Channel, TvGridAdapter.ViewHolder
 
         // Set click listener for the item
         holder.itemView.setOnClickListener(v -> {
-            Toast.makeText(context, "Clicked: " + channel.getChannelName(), Toast.LENGTH_SHORT).show();
-            // TODO: Navigate to player screen, e.g., startPlayerActivity(channel.getStreamUrl());
+            setRepository(channel.getChannelId());
+        });
+    }
+    
+    public void setRepository(String channelId){
+        ChannelRepository repository = new ChannelRepository();
+
+        repository.fetchChannelStreams(channelId , new ChannelRepository.ChannelCallback() {
+            @Override
+            public void onSuccess(List<ChannelUrl> urls) {
+                MultipleLinkDialog.show(context, urls);
+            }
+
+            @Override
+            public void onFailure(String error) {
+                Log.e("FirebaseError", error);
+            }
         });
     }
 

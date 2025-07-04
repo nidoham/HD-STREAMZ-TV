@@ -4,11 +4,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.Window;
-import android.view.WindowInsets;
-import android.view.WindowInsetsController;
 import android.widget.ImageView;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 public class SplashActivity extends AppCompatActivity {
 
@@ -17,15 +15,12 @@ public class SplashActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_splash);
 
-        // Set immersive mode using WindowInsetsController
-        Window window = getWindow();
-        WindowInsetsController controller = window.getInsetsController();
-        if (controller != null) {
-            controller.hide(WindowInsets.Type.systemBars());
-            controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-        }
+        // Set the status bar color to the theme's background color.
+        // This replaces the immersive mode to make the status bar visible with a custom color.
+        getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.md_theme_background));
+
+        setContentView(R.layout.activity_splash);
 
         // Set the app icon
         ImageView splashImage = findViewById(R.id.splash_icon);
