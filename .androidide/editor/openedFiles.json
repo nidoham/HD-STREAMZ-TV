@@ -1,0 +1,20 @@
+{
+  "allFiles": [
+    {
+      "file": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/java/com/nidoham/hdstreamztv/fragment/LiveTvFragment.java",
+      "selection": {
+        "end": {
+          "column": 3,
+          "index": 806,
+          "line": 24
+        },
+        "start": {
+          "column": 3,
+          "index": 806,
+          "line": 24
+        }
+      }
+    }
+  ],
+  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/java/com/nidoham/hdstreamztv/fragment/LiveTvFragment.java"
+}

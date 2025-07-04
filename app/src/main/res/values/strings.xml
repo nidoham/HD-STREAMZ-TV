@@ -2,13 +2,20 @@
 <resources>
     <string name="app_name">HD STREAMZ TV</string>
     
+    <!-- Channel Information -->
+    <string name="channel_logo">Channel Logo</string>
+
     <!-- Main navigation tab titles -->
-    <string name="tab_events">Events</string>
-    <string name="tab_live_tv">Live TV</string>
-    <string name="tab_live_radio">Live Radio</string>
-    <string name="tab_favorite">Favorite</string>
+    <string name="tab_events">EVENTS</string>
+    <string name="tab_live_tv">LIVE TV</string>
+    <string name="tab_live_radio">LIVE RADIO</string>
+    <string name="tab_favorite">FAVORITE</string>
 
     <!-- Content descriptions for accessibility -->
     <string name="content_description_search">Search</string>
     <string name="content_description_notifications">Notifications</string>
+    
+    <!-- Channel Error -->
+    <string name="no_channels_available">No Channel</string>
+    
 </resources>

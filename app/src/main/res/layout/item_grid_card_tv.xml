@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="110dp"
+    android:layout_height="130dp"
+    android:layout_margin="6dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?android:attr/selectableItemBackground">
+
+    <!-- LinearLayout to arrange the logo and title vertically -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
+
+        <!-- ImageView for the channel logo.
+             - layout_weight="1" makes it take up most of the vertical space.
+             - padding creates the white space around the logo.
+             - scaleType="fitCenter" ensures the logo fits inside without being cropped. -->
+        <ImageView
+            android:id="@+id/iv_channel_logo"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:contentDescription="@string/channel_logo"
+            android:padding="10dp"
+            android:scaleType="fitCenter"
+            tools:src="@tools:sample/avatars" />
+
+        <!-- TextView for the channel name -->
+        <TextView
+            android:id="@+id/tv_channel_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:paddingBottom="8dp"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorPrimary"
+            tools:text="Channel Name" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

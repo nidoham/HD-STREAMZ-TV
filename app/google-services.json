@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "737846053148",
+    "firebase_url": "https://hd-streamz-tv-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "hd-streamz-tv",
+    "storage_bucket": "hd-streamz-tv.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:737846053148:android:e91f8a26674a0ef2cb52d9",
+        "android_client_info": {
+          "package_name": "com.nidoham.hdstreamztv"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpDZay55aNvvWho5CzhGo1JUSdTvwRZ5c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Using a FrameLayout or CoordinatorLayout is good for layering views -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/tv_grid_recyclerview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:visibility="gone" /> <!-- Start as gone -->
+
+    <!-- THIS IS THE MISSING PROGRESS BAR -->
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="visible" /> <!-- Start as visible or gone -->
+
+    <!-- THIS IS THE MISSING ERROR TEXT VIEW -->
+    <TextView
+        android:id="@+id/error_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Failed to load channels."
+        android:visibility="gone" /> <!-- Start as gone -->
+
+</FrameLayout>
