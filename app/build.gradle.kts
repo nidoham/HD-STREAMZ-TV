@@ -49,6 +49,7 @@ dependencies {
     val androidxWorkVersion = "2.8.1"
     implementation("androidx.work:work-runtime-ktx:$androidxWorkVersion")
     implementation("androidx.work:work-rxjava3:$androidxWorkVersion")
+    
     implementation("androidx.webkit:webkit:1.9.0")
 
     implementation("com.github.bumptech.glide:glide:4.16.0")
@@ -61,6 +62,10 @@ dependencies {
     implementation("androidx.preference:preference:1.2.1")
     
     implementation("com.squareup.okhttp3:okhttp-urlconnection:4.12.0")
+    
+    // ----> ADD THESE TWO LINES TO FIX THE ERROR <----
+    implementation("io.reactivex.rxjava3:rxjava:3.1.8")
+    implementation("io.reactivex.rxjava3:rxandroid:3.0.2")
     
     
     val newPipe = "v0.24.6"
