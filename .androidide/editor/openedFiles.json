@@ -1,20 +1,20 @@
 {
   "allFiles": [
     {
-      "file": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/java/com/nidoham/hdstreamztv/App.java",
+      "file": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/java/com/nidoham/hdstreamztv/utils/Localization.java",
       "selection": {
         "end": {
-          "column": 1,
-          "index": 5316,
-          "line": 169
+          "column": 41,
+          "index": 2633,
+          "line": 75
         },
         "start": {
-          "column": 1,
-          "index": 5316,
-          "line": 169
+          "column": 41,
+          "index": 2633,
+          "line": 75
         }
       }
     }
   ],
-  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/java/com/nidoham/hdstreamztv/App.java"
+  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/java/com/nidoham/hdstreamztv/utils/Localization.java"
 }

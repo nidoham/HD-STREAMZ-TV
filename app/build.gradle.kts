@@ -44,6 +44,12 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.9.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    
+    
+    val androidxWorkVersion = "2.8.1"
+    implementation("androidx.work:work-runtime-ktx:$androidxWorkVersion")
+    implementation("androidx.work:work-rxjava3:$androidxWorkVersion")
+    implementation("androidx.webkit:webkit:1.9.0")
 
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
@@ -78,6 +84,11 @@ dependencies {
 
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.5.1")
+    
+    implementation("io.noties.markwon:core:4.6.2")
+    implementation("io.noties.markwon:linkify:4.6.2")
+    
+    implementation("org.ocpsoft.prettytime:prettytime:5.0.7.Final")
 }
 
 // ✅ Force rhino version to avoid conflict
