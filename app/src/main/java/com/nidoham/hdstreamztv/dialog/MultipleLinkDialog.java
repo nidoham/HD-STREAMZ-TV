@@ -134,8 +134,7 @@ public class MultipleLinkDialog {
         
         // TODO: Fix this hardcoded YouTube URL - should use channelUrl.getLink()
         // Currently using hardcoded YouTube.SONG_001 - this should be dynamic
-        intent.putExtra("link", YouTube.SONG_001);
-        // intent.putExtra("link", channelUrl.getLink()); // Use this instead
+        intent.putExtra("link", channelUrl.getLink()); // Use this instead
         
         intent.putExtra("category", Template.YOUTUBE);
         return intent;

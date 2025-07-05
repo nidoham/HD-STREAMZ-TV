@@ -78,6 +78,8 @@ dependencies {
     implementation("org.mozilla:rhino:1.7.13")
     
     implementation("com.github.TeamNewPipe:nanojson:1d9e1aea9049fc9f85e68b43ba39fe7be1c1f751")
+    
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
     // ✅ ExoPlayer / Media3
     val media3Version = "1.3.1"

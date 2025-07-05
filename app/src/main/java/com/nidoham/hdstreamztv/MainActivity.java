@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
                         tab.setText(getString(R.string.tab_live_tv));
                         break;
                     case 2:
-                        tab.setText(getString(R.string.tab_live_radio));
+                        tab.setText(getString(R.string.tab_youtube));
                         break;
                     case 3:
                         tab.setText(getString(R.string.tab_favorite));

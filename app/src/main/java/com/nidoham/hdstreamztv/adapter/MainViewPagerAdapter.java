@@ -6,10 +6,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
 // Import the fragment classes you are about to create
-import com.nidoham.hdstreamztv.fragment.EventsFragment;
-import com.nidoham.hdstreamztv.fragment.FavoriteFragment;
-import com.nidoham.hdstreamztv.fragment.LiveRadioFragment;
-import com.nidoham.hdstreamztv.fragment.LiveTvFragment;
+import com.nidoham.hdstreamztv.fragment.*;
 
 public class MainViewPagerAdapter extends FragmentStateAdapter {
 
@@ -30,7 +27,7 @@ public class MainViewPagerAdapter extends FragmentStateAdapter {
             case 1:
                 return new LiveTvFragment();
             case 2:
-                return new LiveRadioFragment();
+                return new YouTubeFragment();
             case 3:
                 return new FavoriteFragment();
             default:

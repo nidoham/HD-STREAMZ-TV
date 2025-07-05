@@ -8,6 +8,7 @@
     <!-- Main navigation tab titles -->
     <string name="tab_events">EVENTS</string>
     <string name="tab_live_tv">LIVE TV</string>
+    <string name="tab_youtube">YOUTUBE</string>
     <string name="tab_live_radio">LIVE RADIO</string>
     <string name="tab_favorite">FAVORITE</string>
 

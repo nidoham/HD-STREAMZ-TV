@@ -2,6 +2,7 @@ package com.nidoham.hdstreamztv;
 
 import android.annotation.SuppressLint;
 import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -32,459 +33,577 @@ import com.nidoham.hdstreamztv.newpipe.extractors.helper.YouTubeTitleFetcher;
 import com.nidoham.hdstreamztv.template.model.settings.Template;
 
 /**
- * Professional Video Player Activity with Enhanced Architecture
+ * পেশাদার ভিডিও প্লেয়ার অ্যাক্টিভিটি - উন্নত আর্কিটেকচার সহ
  * 
- * This activity provides a comprehensive video playback experience with:
- * - Robust ExoPlayer integration with proper lifecycle management
- * - Gesture-based controls with intelligent auto-hide functionality
- * - Player lock mechanism to prevent accidental interactions
- * - YouTube content extraction with proper async handling
- * - High-precision progress tracking and seeking
- * - Comprehensive error handling with recovery mechanisms
- * - Memory-optimized resource management
- * - Professional UI/UX patterns
+ * এই অ্যাক্টিভিটি একটি সম্পূর্ণ ভিডিও প্লেব্যাক অভিজ্ঞতা প্রদান করে:
+ * - শক্তিশালী ExoPlayer ইন্টিগ্রেশন সঠিক লাইফসাইকেল ম্যানেজমেন্ট সহ
+ * - জেসচার-ভিত্তিক নিয়ন্ত্রণ বুদ্ধিমান অটো-হাইড কার্যকারিতা সহ
+ * - প্লেয়ার লক মেকানিজম দুর্ঘটনাজনিত ইন্টারঅ্যাকশন প্রতিরোধের জন্য
+ * - YouTube কন্টেন্ট এক্সট্র্যাকশন সঠিক async হ্যান্ডলিং সহ
+ * - উচ্চ-নির্ভুলতা প্রগ্রেস ট্র্যাকিং এবং সিকিং
+ * - ব্যাপক ত্রুটি হ্যান্ডলিং পুনরুদ্ধার মেকানিজম সহ
+ * - মেমরি-অপ্টিমাইজড রিসোর্স ম্যানেজমেন্ট
+ * - স্ক্রিন ওরিয়েন্টেশন পরিবর্তনে ভিডিও পুনরায় শুরু না হওয়ার সমাধান
  * 
  * @author Enhanced Professional Version
- * @version 3.0
+ * @version 4.0
  */
 public class PlayerActivity extends AppCompatActivity {
-
-    // ========================================================================================
-    // CONSTANTS & CONFIGURATION
-    // ========================================================================================
-    
-    private static final String TAG = "PlayerActivity";
-    
-    // UI Timing Constants
-    private static final int CONTROLS_AUTO_HIDE_DELAY_MS = 3000;
-    private static final int LOCK_BUTTON_HIDE_DELAY_MS = 2000;
-    private static final int PROGRESS_UPDATE_INTERVAL_MS = 500;
-    private static final int ERROR_RETRY_DELAY_MS = 2000;
-    
-    // Player Configuration
-    private static final int SEEK_INCREMENT_MS = 10000;
-    private static final int SEEK_BAR_PRECISION = 1000;
-    private static final int MAX_RETRY_ATTEMPTS = 3;
-    
-    // Intent Keys
-    private static final String EXTRA_VIDEO_URL = "link";
-    private static final String EXTRA_VIDEO_NAME = "name";
-    private static final String EXTRA_VIDEO_CATEGORY = "category";
     
     // ========================================================================================
-    // CORE COMPONENTS
+    // ধ্রুবক এবং কনফিগারেশন - Constants & Configuration
     // ========================================================================================
     
-    private ActivityPlayerBinding binding;
-    private ExoPlayer exoPlayer;
+    private static final String TAG = "VideoPlayerActivity";
     
-    // Thread Management
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    private final Handler progressHandler = new Handler(Looper.getMainLooper());
+    // UI টাইমিং ধ্রুবক - UI Timing Constants
+    private static final int CONTROL_AUTO_HIDE_DELAY_MILLISECONDS = 3000;
+    private static final int LOCK_BUTTON_HIDE_DELAY_MILLISECONDS = 2000;
+    private static final int PROGRESS_UPDATE_INTERVAL_MILLISECONDS = 500;
+    private static final int ERROR_RETRY_DELAY_MILLISECONDS = 2000;
     
-    // Scheduled Tasks
-    private final Runnable hideControlsRunnable = this::hidePlayerControls;
-    private final Runnable hideLockButtonRunnable = this::hideLockButtonDelayed;
-    private Runnable progressUpdateRunnable;
+    // প্লেয়ার কনফিগারেশন - Player Configuration
+    private static final int SEEK_INCREMENT_MILLISECONDS = 10000;
+    private static final int SEEK_BAR_MAXIMUM_PRECISION = 1000;
+    private static final int MAXIMUM_RETRY_ATTEMPTS = 3;
     
-    // State Management
-    private final PlayerStateManager stateManager = new PlayerStateManager();
-    private final VideoInfoManager videoInfoManager = new VideoInfoManager();
+    // ইনটেন্ট কী - Intent Keys
+    private static final String EXTRA_VIDEO_URL_KEY = "link";
+    private static final String EXTRA_VIDEO_NAME_KEY = "name";
+    private static final String EXTRA_VIDEO_CATEGORY_KEY = "category";
+    
+    // স্টেট সেভ কী - State Save Keys
+    private static final String SAVED_PLAYBACK_POSITION_KEY = "playback_position";
+    private static final String SAVED_PLAY_WHEN_READY_KEY = "play_when_ready";
+    private static final String SAVED_PLAYER_LOCKED_KEY = "player_locked";
+    
+    // ========================================================================================
+    // মূল কম্পোনেন্ট - Core Components
+    // ========================================================================================
+    
+    private ActivityPlayerBinding viewBinding;
+    private ExoPlayer mediaPlayer;
+    
+    // থ্রেড ম্যানেজমেন্ট - Thread Management
+    private final Handler mainThreadHandler = new Handler(Looper.getMainLooper());
+    private final Handler progressUpdateHandler = new Handler(Looper.getMainLooper());
+    
+    // নির্ধারিত কাজ - Scheduled Tasks
+    private final Runnable hideControlsTask = this::hidePlayerControlsFromView;
+    private final Runnable hideLockButtonTask = this::hideLockButtonAfterDelay;
+    private Runnable progressUpdateTask;
+    
+    // স্টেট ম্যানেজমেন্ট - State Management
+    private final VideoPlayerStateManager playerStateManager = new VideoPlayerStateManager();
+    private final VideoInformationManager videoInfoManager = new VideoInformationManager();
     private final ErrorRecoveryManager errorRecoveryManager = new ErrorRecoveryManager();
-
+    
     // ========================================================================================
-    // STATE MANAGEMENT CLASSES
+    // স্টেট ম্যানেজমেন্ট ক্লাস - State Management Classes
     // ========================================================================================
     
     /**
+     * সমস্ত প্লেয়ার-সম্পর্কিত স্টেট থ্রেড নিরাপত্তার সাথে পরিচালনা করে
      * Manages all player-related state with thread safety
      */
-    private static class PlayerStateManager {
-        private volatile boolean isLocked = false;
-        private volatile boolean isUserSeeking = false;
-        private volatile boolean areControlsVisible = false;
-        private volatile boolean shouldAutoPlay = true;
-        private volatile long lastKnownPosition = 0L;
-        private volatile int lastPlaybackState = Player.STATE_IDLE;
-        private volatile boolean isInitialized = false;
+    private static class VideoPlayerStateManager {
         
-        // Getters and setters with proper synchronization
-        public synchronized boolean isLocked() { return isLocked; }
-        public synchronized void setLocked(boolean locked) { this.isLocked = locked; }
+        // প্লেয়ার স্টেট ভেরিয়েবল - Player State Variables
+        private volatile boolean isPlayerLocked = false;
+        private volatile boolean isUserCurrentlySeeking = false;
+        private volatile boolean areControlsCurrentlyVisible = false;
+        private volatile boolean shouldAutoPlayWhenReady = true;
+        private volatile long lastKnownPlaybackPosition = 0L;
+        private volatile int lastRecordedPlaybackState = Player.STATE_IDLE;
+        private volatile boolean isPlayerInitialized = false;
         
-        public synchronized boolean isUserSeeking() { return isUserSeeking; }
-        public synchronized void setUserSeeking(boolean seeking) { this.isUserSeeking = seeking; }
+        // সিঙ্ক্রোনাইজড গেটার এবং সেটার - Synchronized Getters and Setters
         
-        public synchronized boolean areControlsVisible() { return areControlsVisible; }
-        public synchronized void setControlsVisible(boolean visible) { this.areControlsVisible = visible; }
+        public synchronized boolean isPlayerCurrentlyLocked() { 
+            return isPlayerLocked; 
+        }
         
-        public synchronized boolean shouldAutoPlay() { return shouldAutoPlay; }
-        public synchronized void setShouldAutoPlay(boolean autoPlay) { this.shouldAutoPlay = autoPlay; }
+        public synchronized void setPlayerLockState(boolean locked) { 
+            this.isPlayerLocked = locked; 
+        }
         
-        public synchronized long getLastKnownPosition() { return lastKnownPosition; }
-        public synchronized void setLastKnownPosition(long position) { this.lastKnownPosition = position; }
+        public synchronized boolean isUserCurrentlySeeking() { 
+            return isUserCurrentlySeeking; 
+        }
         
-        public synchronized int getLastPlaybackState() { return lastPlaybackState; }
-        public synchronized void setLastPlaybackState(int state) { this.lastPlaybackState = state; }
+        public synchronized void setUserSeekingState(boolean seeking) { 
+            this.isUserCurrentlySeeking = seeking; 
+        }
         
-        public synchronized boolean isInitialized() { return isInitialized; }
-        public synchronized void setInitialized(boolean initialized) { this.isInitialized = initialized; }
+        public synchronized boolean areControlsCurrentlyVisible() { 
+            return areControlsCurrentlyVisible; 
+        }
         
-        public synchronized void reset() {
-            isLocked = false;
-            isUserSeeking = false;
-            areControlsVisible = false;
-            shouldAutoPlay = true;
-            lastKnownPosition = 0L;
-            lastPlaybackState = Player.STATE_IDLE;
-            isInitialized = false;
+        public synchronized void setControlsVisibilityState(boolean visible) { 
+            this.areControlsCurrentlyVisible = visible; 
+        }
+        
+        public synchronized boolean shouldAutoPlayWhenReady() { 
+            return shouldAutoPlayWhenReady; 
+        }
+        
+        public synchronized void setAutoPlayState(boolean autoPlay) { 
+            this.shouldAutoPlayWhenReady = autoPlay; 
+        }
+        
+        public synchronized long getLastKnownPlaybackPosition() { 
+            return lastKnownPlaybackPosition; 
+        }
+        
+        public synchronized void updateLastKnownPosition(long position) { 
+            this.lastKnownPlaybackPosition = position; 
+        }
+        
+        public synchronized int getLastRecordedPlaybackState() { 
+            return lastRecordedPlaybackState; 
+        }
+        
+        public synchronized void updateLastPlaybackState(int state) { 
+            this.lastRecordedPlaybackState = state; 
+        }
+        
+        public synchronized boolean isPlayerInitialized() { 
+            return isPlayerInitialized; 
+        }
+        
+        public synchronized void setPlayerInitializationState(boolean initialized) { 
+            this.isPlayerInitialized = initialized; 
+        }
+        
+        /**
+         * সমস্ত স্টেট রিসেট করে - Reset all states
+         */
+        public synchronized void resetAllStates() {
+            isPlayerLocked = false;
+            isUserCurrentlySeeking = false;
+            areControlsCurrentlyVisible = false;
+            shouldAutoPlayWhenReady = true;
+            lastKnownPlaybackPosition = 0L;
+            lastRecordedPlaybackState = Player.STATE_IDLE;
+            isPlayerInitialized = false;
         }
     }
     
     /**
+     * ভিডিও তথ্য যাচাইকরণ সহ পরিচালনা করে
      * Manages video information with validation
      */
-    private static class VideoInfoManager {
-        private String videoUrl;
-        private String videoName;
-        private int videoCategory;
-        private String resolvedUrl;
-        private boolean isUrlResolved = false;
+    private static class VideoInformationManager {
         
-        public boolean extractFromIntent(@Nullable Bundle extras) {
-            if (extras == null) return false;
+        private String originalVideoUrl;
+        private String videoDisplayName;
+        private int videoContentCategory;
+        private String resolvedVideoUrl;
+        private boolean isVideoUrlResolved = false;
+        
+        /**
+         * ইনটেন্ট থেকে তথ্য নিষ্কাশন করে - Extract information from intent
+         */
+        public boolean extractVideoInfoFromIntent(@Nullable Bundle intentExtras) {
+            if (intentExtras == null) return false;
             
-            videoUrl = extras.getString(EXTRA_VIDEO_URL);
-            videoName = extras.getString(EXTRA_VIDEO_NAME);
-            videoCategory = extras.getInt(EXTRA_VIDEO_CATEGORY, -1);
+            originalVideoUrl = intentExtras.getString(EXTRA_VIDEO_URL_KEY);
+            videoDisplayName = intentExtras.getString(EXTRA_VIDEO_NAME_KEY);
+            videoContentCategory = intentExtras.getInt(EXTRA_VIDEO_CATEGORY_KEY, -1);
             
-            return isValid();
+            return isVideoInformationValid();
         }
         
-        public boolean isValid() {
-            return videoUrl != null && !videoUrl.trim().isEmpty() &&
-                   videoName != null && !videoName.trim().isEmpty() &&
-                   videoCategory >= 0;
+        /**
+         * ভিডিও তথ্য বৈধতা যাচাই - Validate video information
+         */
+        public boolean isVideoInformationValid() {
+            return originalVideoUrl != null && !originalVideoUrl.trim().isEmpty() &&
+                   videoDisplayName != null && !videoDisplayName.trim().isEmpty() &&
+                   videoContentCategory >= 0;
         }
         
-        // Getters
-        public String getVideoUrl() { return videoUrl; }
-        public String getVideoName() { return videoName; }
-        public int getVideoCategory() { return videoCategory; }
-        public String getResolvedUrl() { return isUrlResolved ? resolvedUrl : videoUrl; }
+        // গেটার মেথড - Getter Methods
+        public String getOriginalVideoUrl() { return originalVideoUrl; }
+        public String getVideoDisplayName() { return videoDisplayName; }
+        public int getVideoContentCategory() { return videoContentCategory; }
         
-        public void setResolvedUrl(String url) {
-            this.resolvedUrl = url;
-            this.isUrlResolved = true;
+        public String getFinalVideoUrlForPlayback() { 
+            return isVideoUrlResolved ? resolvedVideoUrl : originalVideoUrl; 
         }
         
-        public boolean isYouTubeVideo() {
-            return videoCategory == Template.YOUTUBE;
+        public void setResolvedVideoUrl(String resolvedUrl) {
+            this.resolvedVideoUrl = resolvedUrl;
+            this.isVideoUrlResolved = true;
+        }
+        
+        public boolean isYouTubeVideoContent() {
+            return videoContentCategory == Template.YOUTUBE;
         }
     }
     
     /**
+     * পুনরায় চেষ্টা লজিক সহ ত্রুটি পুনরুদ্ধার হ্যান্ডেল করে
      * Handles error recovery with retry logic
      */
     private class ErrorRecoveryManager {
-        private int retryCount = 0;
-        private long lastErrorTime = 0;
         
-        public boolean shouldRetry(PlaybackException error) {
+        private int currentRetryCount = 0;
+        private long lastErrorOccurrenceTime = 0;
+        
+        /**
+         * পুনরায় চেষ্টা করা উচিত কিনা নির্ধারণ করে - Determine if should retry
+         */
+        public boolean shouldAttemptRetry(PlaybackException playbackError) {
             long currentTime = System.currentTimeMillis();
             
+            // যথেষ্ট সময় অতিবাহিত হলে পুনরায় চেষ্টার সংখ্যা রিসেট করুন
             // Reset retry count if enough time has passed
-            if (currentTime - lastErrorTime > 30000) { // 30 seconds
-                retryCount = 0;
+            if (currentTime - lastErrorOccurrenceTime > 30000) { // 30 সেকেন্ড
+                currentRetryCount = 0;
             }
             
-            lastErrorTime = currentTime;
-            return retryCount < MAX_RETRY_ATTEMPTS;
+            lastErrorOccurrenceTime = currentTime;
+            return currentRetryCount < MAXIMUM_RETRY_ATTEMPTS;
         }
         
-        public void attemptRecovery() {
-            retryCount++;
-            Log.w(TAG, "Attempting recovery, attempt: " + retryCount);
+        /**
+         * পুনরুদ্ধারের চেষ্টা করে - Attempt recovery
+         */
+        public void attemptErrorRecovery() {
+            currentRetryCount++;
+            Log.w(TAG, "পুনরুদ্ধারের চেষ্টা করা হচ্ছে, চেষ্টা: " + currentRetryCount);
             
-            mainHandler.postDelayed(() -> {
-                if (exoPlayer != null && !isFinishing()) {
+            mainThreadHandler.postDelayed(() -> {
+                if (mediaPlayer != null && !isFinishing()) {
                     try {
-                        exoPlayer.prepare();
-                        if (stateManager.shouldAutoPlay()) {
-                            exoPlayer.play();
+                        mediaPlayer.prepare();
+                        if (playerStateManager.shouldAutoPlayWhenReady()) {
+                            mediaPlayer.play();
                         }
                     } catch (Exception e) {
-                        Log.e(TAG, "Recovery attempt failed", e);
+                        Log.e(TAG, "পুনরুদ্ধারের চেষ্টা ব্যর্থ", e);
                     }
                 }
-            }, ERROR_RETRY_DELAY_MS);
+            }, ERROR_RETRY_DELAY_MILLISECONDS);
         }
         
-        public void reset() {
-            retryCount = 0;
-            lastErrorTime = 0;
+        /**
+         * ত্রুটি পুনরুদ্ধার স্টেট রিসেট করে - Reset error recovery state
+         */
+        public void resetErrorRecoveryState() {
+            currentRetryCount = 0;
+            lastErrorOccurrenceTime = 0;
         }
     }
-
+    
     // ========================================================================================
-    // ACTIVITY LIFECYCLE
+    // অ্যাক্টিভিটি লাইফসাইকেল - Activity Lifecycle
     // ========================================================================================
     
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(TAG, "onCreate: Initializing PlayerActivity");
+        Log.d(TAG, "onCreate: PlayerActivity শুরু করা হচ্ছে");
         
-        if (!initializeActivity()) {
-            Log.e(TAG, "onCreate: Failed to initialize activity");
+        if (!initializeActivityComponents()) {
+            Log.e(TAG, "onCreate: অ্যাক্টিভিটি শুরু করতে ব্যর্থ");
             return;
         }
         
-        if (!extractAndValidateVideoInfo()) {
-            Log.e(TAG, "onCreate: Invalid video information");
+        if (!extractAndValidateVideoInformation()) {
+            Log.e(TAG, "onCreate: অবৈধ ভিডিও তথ্য");
             return;
         }
         
-        setupVideoPlayer();
+        // সেভ করা স্টেট পুনরুদ্ধার করুন - Restore saved state
+        restorePlayerStateFromBundle(savedInstanceState);
+        
+        setupCompleteVideoPlayerSystem();
     }
     
     @Override
     protected void onStart() {
         super.onStart();
-        Log.d(TAG, "onStart: Activity starting");
+        Log.d(TAG, "onStart: অ্যাক্টিভিটি শুরু হচ্ছে");
         
-        if (exoPlayer != null && binding != null) {
-            binding.playerView.onResume();
+        if (mediaPlayer != null && viewBinding != null) {
+            viewBinding.playerView.onResume();
         }
     }
     
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d(TAG, "onResume: Activity resuming");
+        Log.d(TAG, "onResume: অ্যাক্টিভিটি পুনরায় শুরু হচ্ছে");
         
-        enforceFullscreenMode();
+        enforceFullscreenImmersiveMode();
         
-        if (exoPlayer != null && stateManager.shouldAutoPlay()) {
-            exoPlayer.play();
+        if (mediaPlayer != null && playerStateManager.shouldAutoPlayWhenReady()) {
+            mediaPlayer.play();
         }
         
-        startProgressUpdates();
+        startProgressUpdateCycle();
     }
     
     @Override
     protected void onPause() {
         super.onPause();
-        Log.d(TAG, "onPause: Activity pausing");
+        Log.d(TAG, "onPause: অ্যাক্টিভিটি বিরতি নিচ্ছে");
         
-        pausePlayerAndSaveState();
-        stopProgressUpdates();
+        pausePlayerAndSaveCurrentState();
+        stopProgressUpdateCycle();
     }
     
     @Override
     protected void onStop() {
         super.onStop();
-        Log.d(TAG, "onStop: Activity stopping");
+        Log.d(TAG, "onStop: অ্যাক্টিভিটি বন্ধ হচ্ছে");
         
-        saveCurrentPlayerState();
+        saveCurrentPlayerStateForRestoration();
         
-        if (binding != null) {
-            binding.playerView.onPause();
+        if (viewBinding != null) {
+            viewBinding.playerView.onPause();
         }
     }
     
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Log.d(TAG, "onDestroy: Cleaning up resources");
+        Log.d(TAG, "onDestroy: রিসোর্স পরিষ্কার করা হচ্ছে");
         
-        releaseAllResources();
+        releaseAllResourcesAndCleanup();
     }
-
+    
+    /**
+     * কনফিগারেশন পরিবর্তনের সময় স্টেট সেভ করে (স্ক্রিন রোটেশন)
+     * Save state during configuration changes (screen rotation)
+     */
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        
+        if (mediaPlayer != null) {
+            outState.putLong(SAVED_PLAYBACK_POSITION_KEY, mediaPlayer.getCurrentPosition());
+            outState.putBoolean(SAVED_PLAY_WHEN_READY_KEY, mediaPlayer.getPlayWhenReady());
+            outState.putBoolean(SAVED_PLAYER_LOCKED_KEY, playerStateManager.isPlayerCurrentlyLocked());
+            
+            Log.d(TAG, "স্টেট সেভ করা হয়েছে - পজিশন: " + mediaPlayer.getCurrentPosition());
+        }
+    }
+    
+    /**
+     * কনফিগারেশন পরিবর্তনের পরে স্টেট পুনরুদ্ধার করে
+     * Restore state after configuration changes
+     */
+    private void restorePlayerStateFromBundle(@Nullable Bundle savedInstanceState) {
+        if (savedInstanceState != null) {
+            long savedPosition = savedInstanceState.getLong(SAVED_PLAYBACK_POSITION_KEY, 0);
+            boolean playWhenReady = savedInstanceState.getBoolean(SAVED_PLAY_WHEN_READY_KEY, true);
+            boolean wasLocked = savedInstanceState.getBoolean(SAVED_PLAYER_LOCKED_KEY, false);
+            
+            playerStateManager.updateLastKnownPosition(savedPosition);
+            playerStateManager.setAutoPlayState(playWhenReady);
+            playerStateManager.setPlayerLockState(wasLocked);
+            
+            Log.d(TAG, "স্টেট পুনরুদ্ধার করা হয়েছে - পজিশন: " + savedPosition);
+        }
+    }
+    
     // ========================================================================================
-    // INITIALIZATION METHODS
+    // ইনিশিয়ালাইজেশন মেথড - Initialization Methods
     // ========================================================================================
     
     /**
+     * সঠিক ত্রুটি হ্যান্ডলিং সহ অ্যাক্টিভিটি কম্পোনেন্ট শুরু করে
      * Initialize activity components with proper error handling
      */
-    private boolean initializeActivity() {
+    private boolean initializeActivityComponents() {
         try {
-            // Initialize view binding
-            binding = ActivityPlayerBinding.inflate(getLayoutInflater());
-            setContentView(binding.getRoot());
+            // ভিউ বাইন্ডিং শুরু করুন - Initialize view binding
+            viewBinding = ActivityPlayerBinding.inflate(getLayoutInflater());
+            setContentView(viewBinding.getRoot());
             
-            // Setup fullscreen mode
-            enforceFullscreenMode();
+            // ফুলস্ক্রিন মোড সেটআপ করুন - Setup fullscreen mode
+            enforceFullscreenImmersiveMode();
             
-            // Initialize progress update task
+            // প্রগ্রেস আপডেট টাস্ক শুরু করুন - Initialize progress update task
             initializeProgressUpdateTask();
             
-            Log.d(TAG, "Activity initialization successful");
+            Log.d(TAG, "অ্যাক্টিভিটি ইনিশিয়ালাইজেশন সফল");
             return true;
             
         } catch (Exception e) {
-            Log.e(TAG, "Failed to initialize activity", e);
-            showErrorAndFinish("Failed to initialize player: " + e.getMessage());
+            Log.e(TAG, "অ্যাক্টিভিটি শুরু করতে ব্যর্থ", e);
+            showErrorMessageAndFinishActivity("প্লেয়ার শুরু করতে ব্যর্থ: " + e.getMessage());
             return false;
         }
     }
     
     /**
+     * ইনটেন্ট থেকে ভিডিও তথ্য নিষ্কাশন এবং যাচাই করে
      * Extract and validate video information from intent
      */
-    private boolean extractAndValidateVideoInfo() {
+    private boolean extractAndValidateVideoInformation() {
         try {
-            if (!videoInfoManager.extractFromIntent(getIntent().getExtras())) {
-                showErrorAndFinish("Invalid video data provided");
+            if (!videoInfoManager.extractVideoInfoFromIntent(getIntent().getExtras())) {
+                showErrorMessageAndFinishActivity("অবৈধ ভিডিও ডেটা প্রদান করা হয়েছে");
                 return false;
             }
             
-            Log.d(TAG, "Video info extracted: " + videoInfoManager.getVideoName());
+            Log.d(TAG, "ভিডিও তথ্য নিষ্কাশিত: " + videoInfoManager.getVideoDisplayName());
             return true;
             
         } catch (Exception e) {
-            Log.e(TAG, "Error extracting video information", e);
-            showErrorAndFinish("Error processing video data: " + e.getMessage());
+            Log.e(TAG, "ভিডিও তথ্য নিষ্কাশনে ত্রুটি", e);
+            showErrorMessageAndFinishActivity("ভিডিও ডেটা প্রক্রিয়াকরণে ত্রুটি: " + e.getMessage());
             return false;
         }
     }
     
     /**
+     * নিমজ্জনকারী ফুলস্ক্রিন মোড কনফিগার করে
      * Configure immersive fullscreen mode
      */
-    private void enforceFullscreenMode() {
+    private void enforceFullscreenImmersiveMode() {
         try {
             WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
             
-            WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(
+            WindowInsetsControllerCompat windowController = WindowCompat.getInsetsController(
                 getWindow(), getWindow().getDecorView());
             
-            if (controller != null) {
-                controller.hide(WindowInsetsCompat.Type.systemBars());
-                controller.setSystemBarsBehavior(
+            if (windowController != null) {
+                windowController.hide(WindowInsetsCompat.Type.systemBars());
+                windowController.setSystemBarsBehavior(
                     WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
             }
             
         } catch (Exception e) {
-            Log.w(TAG, "Failed to set fullscreen mode", e);
+            Log.w(TAG, "ফুলস্ক্রিন মোড সেট করতে ব্যর্থ", e);
         }
     }
     
     /**
+     * প্রগ্রেস আপডেট টাস্ক শুরু করে
      * Initialize the progress update task
      */
     private void initializeProgressUpdateTask() {
-        progressUpdateRunnable = new Runnable() {
+        progressUpdateTask = new Runnable() {
             @Override
             public void run() {
-                if (exoPlayer != null && !stateManager.isUserSeeking() && !isFinishing()) {
-                    updateProgressDisplay();
+                if (mediaPlayer != null && !playerStateManager.isUserCurrentlySeeking() && !isFinishing()) {
+                    updateProgressDisplayInformation();
                     
-                    if (exoPlayer.isPlaying()) {
-                        progressHandler.postDelayed(this, PROGRESS_UPDATE_INTERVAL_MS);
+                    if (mediaPlayer.isPlaying()) {
+                        progressUpdateHandler.postDelayed(this, PROGRESS_UPDATE_INTERVAL_MILLISECONDS);
                     }
                 }
             }
         };
     }
-
+    
     // ========================================================================================
-    // PLAYER SETUP
+    // প্লেয়ার সেটআপ - Player Setup
     // ========================================================================================
     
     /**
+     * সম্পূর্ণ ভিডিও প্লেয়ার সিস্টেম সেটআপ করে
      * Setup the complete video player system
      */
-    private void setupVideoPlayer() {
+    private void setupCompleteVideoPlayerSystem() {
         try {
-            Log.d(TAG, "Setting up video player");
+            Log.d(TAG, "ভিডিও প্লেয়ার সেটআপ করা হচ্ছে");
             
-            createAndConfigureExoPlayer();
-            setupUserInterface();
+            createAndConfigureMediaPlayer();
+            setupUserInterfaceComponents();
             
+            // মিডিয়া প্রস্তুত করার আগে টাইটেল সেটআপ করুন
             // Setup title BEFORE preparing media to ensure it's visible immediately
-            setupVideoTitle();
+            setupVideoTitleDisplay();
             
-            prepareMediaForPlayback();
+            prepareMediaContentForPlayback();
             
-            stateManager.setInitialized(true);
-            showPlayerControls();
+            playerStateManager.setPlayerInitializationState(true);
+            showPlayerControlsToUser();
             
-            Log.d(TAG, "Video player setup completed");
+            Log.d(TAG, "ভিডিও প্লেয়ার সেটআপ সম্পন্ন");
             
         } catch (Exception e) {
-            Log.e(TAG, "Failed to setup video player", e);
-            showErrorAndFinish("Failed to setup player: " + e.getMessage());
+            Log.e(TAG, "ভিডিও প্লেয়ার সেটআপ করতে ব্যর্থ", e);
+            showErrorMessageAndFinishActivity("প্লেয়ার সেটআপ করতে ব্যর্থ: " + e.getMessage());
         }
     }
     
     /**
+     * সর্বোত্তম সেটিংস সহ ExoPlayer তৈরি এবং কনফিগার করে
      * Create and configure ExoPlayer with optimal settings
      */
-    private void createAndConfigureExoPlayer() {
+    private void createAndConfigureMediaPlayer() {
         try {
+            // অপ্টিমাইজড কনফিগারেশন সহ ExoPlayer তৈরি করুন
             // Create ExoPlayer with optimized configuration
-            exoPlayer = new ExoPlayer.Builder(this)
-                .setSeekBackIncrementMs(SEEK_INCREMENT_MS)
-                .setSeekForwardIncrementMs(SEEK_INCREMENT_MS)
+            mediaPlayer = new ExoPlayer.Builder(this)
+                .setSeekBackIncrementMs(SEEK_INCREMENT_MILLISECONDS)
+                .setSeekForwardIncrementMs(SEEK_INCREMENT_MILLISECONDS)
                 .build();
             
-            // Configure PlayerView
-            binding.playerView.setPlayer(exoPlayer);
-            binding.playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
-            binding.playerView.setUseController(false); // Use custom controls
+            // PlayerView কনফিগার করুন - Configure PlayerView
+            viewBinding.playerView.setPlayer(mediaPlayer);
+            viewBinding.playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
+            viewBinding.playerView.setUseController(false); // কাস্টম কন্ট্রোল ব্যবহার করুন
             
-            // Add comprehensive event listener
-            exoPlayer.addListener(new PlayerEventListener());
+            // ব্যাপক ইভেন্ট লিসেনার যোগ করুন - Add comprehensive event listener
+            mediaPlayer.addListener(new VideoPlayerEventListener());
             
-            Log.d(TAG, "ExoPlayer created and configured");
+            Log.d(TAG, "ExoPlayer তৈরি এবং কনফিগার করা হয়েছে");
             
         } catch (Exception e) {
-            Log.e(TAG, "Failed to create ExoPlayer", e);
-            throw new RuntimeException("ExoPlayer creation failed", e);
+            Log.e(TAG, "ExoPlayer তৈরি করতে ব্যর্থ", e);
+            throw new RuntimeException("ExoPlayer তৈরি ব্যর্থ", e);
         }
     }
     
     /**
+     * URL রেজোলিউশন সহ প্লেব্যাকের জন্য মিডিয়া প্রস্তুত করে
      * Prepare media for playback with URL resolution
      */
-    private void prepareMediaForPlayback() {
-        if (videoInfoManager.isYouTubeVideo()) {
-            resolveYouTubeUrlAndPrepare();
+    private void prepareMediaContentForPlayback() {
+        if (videoInfoManager.isYouTubeVideoContent()) {
+            resolveYouTubeUrlAndPrepareMedia();
         } else {
-            prepareMediaWithUrl(videoInfoManager.getVideoUrl());
+            prepareMediaWithDirectUrl(videoInfoManager.getOriginalVideoUrl());
         }
     }
     
     /**
+     * অ্যাসিঙ্ক্রোনাসভাবে YouTube URL রেজোলভ করে এবং মিডিয়া প্রস্তুত করে
      * Resolve YouTube URL asynchronously and prepare media
      */
-    private void resolveYouTubeUrlAndPrepare() {
-        Log.d(TAG, "Resolving YouTube URL");
+    private void resolveYouTubeUrlAndPrepareMedia() {
+        Log.d(TAG, "YouTube URL রেজোলভ করা হচ্ছে");
         
-        YouTubeLinkExtractor extractor = new YouTubeLinkExtractor();
-        extractor.extractVideoLink(
-            videoInfoManager.getVideoUrl(),
+        YouTubeLinkExtractor linkExtractor = new YouTubeLinkExtractor();
+        linkExtractor.extractVideoLink(
+            videoInfoManager.getOriginalVideoUrl(),
             YouTubeLinkExtractor.Quality.BEST,
             new YouTubeLinkExtractor.OnVideoLinkListener() {
                 @Override
                 public void onVideoLinkExtracted(String extractedUrl, String title) {
-                    Log.d(TAG, "YouTube URL resolved successfully");
+                    Log.d(TAG, "YouTube URL সফলভাবে রেজোলভ করা হয়েছে");
                     
                     runOnUiThread(() -> {
-                        videoInfoManager.setResolvedUrl(extractedUrl);
-                        prepareMediaWithUrl(extractedUrl);
+                        videoInfoManager.setResolvedVideoUrl(extractedUrl);
+                        prepareMediaWithDirectUrl(extractedUrl);
                     });
                 }
                 
                 @Override
                 public void onError(String error) {
-                    Log.w(TAG, "YouTube URL extraction failed: " + error);
+                    Log.w(TAG, "YouTube URL এক্সট্র্যাকশন ব্যর্থ: " + error);
                     
                     runOnUiThread(() -> {
-                        // Fallback to original URL
-                        prepareMediaWithUrl(videoInfoManager.getVideoUrl());
+                        // মূল URL এ ফলব্যাক - Fallback to original URL
+                        prepareMediaWithDirectUrl(videoInfoManager.getOriginalVideoUrl());
                     });
                 }
             }
@@ -492,530 +611,503 @@ public class PlayerActivity extends AppCompatActivity {
     }
     
     /**
+     * প্রদত্ত URL দিয়ে মিডিয়া প্রস্তুত করে
      * Prepare media with the given URL
      */
-    private void prepareMediaWithUrl(String mediaUrl) {
+    private void prepareMediaWithDirectUrl(String mediaUrl) {
         try {
-            if (exoPlayer == null || mediaUrl == null || mediaUrl.trim().isEmpty()) {
-                throw new IllegalStateException("Invalid player or URL state");
+            if (mediaPlayer == null || mediaUrl == null || mediaUrl.trim().isEmpty()) {
+                throw new IllegalStateException("অবৈধ প্লেয়ার বা URL স্টেট");
             }
             
-            Log.d(TAG, "Preparing media with URL: " + mediaUrl);
+            Log.d(TAG, "URL দিয়ে মিডিয়া প্রস্তুত করা হচ্ছে: " + mediaUrl);
             
             MediaItem mediaItem = MediaItem.fromUri(Uri.parse(mediaUrl.trim()));
-            exoPlayer.setMediaItem(mediaItem);
+            mediaPlayer.setMediaItem(mediaItem);
             
+            // শেষ জানা অবস্থান থেকে পুনরায় শুরু করুন যদি উপলব্ধ থাকে
             // Resume from last known position if available
-            long lastPosition = stateManager.getLastKnownPosition();
+            long lastPosition = playerStateManager.getLastKnownPlaybackPosition();
             if (lastPosition > 0) {
-                exoPlayer.seekTo(lastPosition);
+                mediaPlayer.seekTo(lastPosition);
             }
             
-            exoPlayer.prepare();
+            mediaPlayer.prepare();
             
-            if (stateManager.shouldAutoPlay()) {
-                exoPlayer.play();
+            if (playerStateManager.shouldAutoPlayWhenReady()) {
+                mediaPlayer.play();
             }
             
         } catch (Exception e) {
-            Log.e(TAG, "Failed to prepare media", e);
+            Log.e(TAG, "মিডিয়া প্রস্তুত করতে ব্যর্থ", e);
             handleMediaPreparationError(e);
         }
     }
     
     /**
+     * মিডিয়া প্রস্তুতির ত্রুটি হ্যান্ডেল করে
      * Handle media preparation errors
      */
     private void handleMediaPreparationError(Exception error) {
-        String errorMessage = "Failed to load video: " + error.getMessage();
+        String errorMessage = "ভিডিও লোড করতে ব্যর্থ: " + error.getMessage();
         Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
         
-        // Attempt recovery if possible
-        if (errorRecoveryManager.shouldRetry(new PlaybackException(
+        // সম্ভব হলে পুনরুদ্ধারের চেষ্টা করুন - Attempt recovery if possible
+        if (errorRecoveryManager.shouldAttemptRetry(new PlaybackException(
             errorMessage, error, PlaybackException.ERROR_CODE_IO_UNSPECIFIED))) {
-            errorRecoveryManager.attemptRecovery();
+            errorRecoveryManager.attemptErrorRecovery();
         } else {
-            showErrorAndFinish("Unable to play video after multiple attempts");
+            showErrorMessageAndFinishActivity("একাধিক চেষ্টার পরেও ভিডিও চালাতে অক্ষম");
         }
     }
-
+    
     // ========================================================================================
-    // PLAYER EVENT HANDLING
+    // প্লেয়ার ইভেন্ট হ্যান্ডলিং - Player Event Handling
     // ========================================================================================
     
     /**
+     * ব্যাপক প্লেয়ার ইভেন্ট লিসেনার
      * Comprehensive player event listener
      */
-    private class PlayerEventListener implements Player.Listener {
+    private class VideoPlayerEventListener implements Player.Listener {
         
         @Override
         public void onPlaybackStateChanged(int playbackState) {
-            Log.d(TAG, "Playback state changed: " + playbackState);
+            Log.d(TAG, "প্লেব্যাক স্টেট পরিবর্তিত: " + playbackState);
             
-            stateManager.setLastPlaybackState(playbackState);
-            handlePlaybackStateChange(playbackState);
+            playerStateManager.updateLastPlaybackState(playbackState);
+            handlePlaybackStateTransition(playbackState);
         }
         
         @Override
         public void onIsPlayingChanged(boolean isPlaying) {
-            Log.d(TAG, "Playing state changed: " + isPlaying);
-            handlePlayingStateChange(isPlaying);
+            Log.d(TAG, "প্লেয়িং স্টেট পরিবর্তিত: " + isPlaying);
+            handlePlayingStateTransition(isPlaying);
         }
         
         @Override
         public void onPlayerError(@NonNull PlaybackException error) {
-            Log.e(TAG, "Player error occurred", error);
-            handlePlayerError(error);
+            Log.e(TAG, "প্লেয়ার ত্রুটি ঘটেছে", error);
+            handlePlayerErrorOccurrence(error);
         }
         
         @Override
         public void onVideoSizeChanged(@NonNull VideoSize videoSize) {
-            Log.d(TAG, "Video size changed: " + videoSize.width + "x" + videoSize.height);
-            // PlayerView handles aspect ratio automatically
+            Log.d(TAG, "ভিডিও সাইজ পরিবর্তিত: " + videoSize.width + "x" + videoSize.height);
+            // PlayerView স্বয়ংক্রিয়ভাবে অ্যাসপেক্ট রেশিও হ্যান্ডেল করে
         }
         
         @Override
         public void onPositionDiscontinuity(@NonNull Player.PositionInfo oldPosition,
                                           @NonNull Player.PositionInfo newPosition,
                                           int reason) {
-            // Update position tracking
-            stateManager.setLastKnownPosition(newPosition.positionMs);
+            // অবস্থান ট্র্যাকিং আপডেট করুন - Update position tracking
+            playerStateManager.updateLastKnownPosition(newPosition.positionMs);
         }
     }
     
     /**
+     * প্লেব্যাক স্টেট পরিবর্তন হ্যান্ডেল করে
      * Handle playback state changes
      */
-    private void handlePlaybackStateChange(int playbackState) {
+    private void handlePlaybackStateTransition(int playbackState) {
         switch (playbackState) {
             case Player.STATE_READY:
-                Log.d(TAG, "Player ready");
-                errorRecoveryManager.reset();
-                startProgressUpdates();
+                Log.d(TAG, "প্লেয়ার প্রস্তুত");
+                errorRecoveryManager.resetErrorRecoveryState();
+                startProgressUpdateCycle();
                 break;
                 
             case Player.STATE_ENDED:
-                Log.d(TAG, "Playback ended");
-                handlePlaybackCompleted();
+                Log.d(TAG, "প্লেব্যাক শেষ");
+                handlePlaybackCompletionEvent();
                 break;
                 
             case Player.STATE_BUFFERING:
-                Log.d(TAG, "Player buffering");
-                // Could show buffering indicator here
+                Log.d(TAG, "প্লেয়ার বাফারিং");
+                // এখানে বাফারিং ইন্ডিকেটর দেখানো যেতে পারে
                 break;
                 
             case Player.STATE_IDLE:
-                Log.d(TAG, "Player idle");
+                Log.d(TAG, "প্লেয়ার নিষ্ক্রিয়");
                 break;
         }
     }
     
     /**
+     * প্লেয়িং স্টেট পরিবর্তন হ্যান্ডেল করে
      * Handle playing state changes
      */
-    private void handlePlayingStateChange(boolean isPlaying) {
-        updatePlayPauseButtonState(isPlaying);
+    private void handlePlayingStateTransition(boolean isPlaying) {
+        updatePlayPauseButtonAppearance(isPlaying);
         
         if (isPlaying) {
-            startProgressUpdates();
+            startProgressUpdateCycle();
         } else {
-            stopProgressUpdates();
+            stopProgressUpdateCycle();
         }
     }
     
     /**
+     * পুনরুদ্ধার লজিক সহ প্লেয়ার ত্রুটি হ্যান্ডেল করে
      * Handle player errors with recovery logic
      */
-    private void handlePlayerError(@NonNull PlaybackException error) {
-        String errorMessage = "Playback error: " + error.getMessage();
+    private void handlePlayerErrorOccurrence(@NonNull PlaybackException error) {
+        String errorMessage = "প্লেব্যাক ত্রুটি: " + error.getMessage();
         Log.e(TAG, errorMessage, error);
         
-        Toast.makeText(this, "Video playback error occurred", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "ভিডিও প্লেব্যাক ত্রুটি ঘটেছে", Toast.LENGTH_SHORT).show();
         
-        if (errorRecoveryManager.shouldRetry(error)) {
-            errorRecoveryManager.attemptRecovery();
+        if (errorRecoveryManager.shouldAttemptRetry(error)) {
+            errorRecoveryManager.attemptErrorRecovery();
         } else {
-            showErrorAndFinish("Unable to recover from playback error");
+            showErrorMessageAndFinishActivity("প্লেব্যাক ত্রুটি থেকে পুনরুদ্ধার করতে অক্ষম");
         }
     }
     
     /**
+     * প্লেব্যাক সমাপ্তি হ্যান্ডেল করে
      * Handle playback completion
      */
-    private void handlePlaybackCompleted() {
-        if (exoPlayer != null) {
-            exoPlayer.seekTo(0);
-            exoPlayer.pause();
+    private void handlePlaybackCompletionEvent() {
+        if (mediaPlayer != null) {
+            mediaPlayer.seekTo(0);
+            mediaPlayer.pause();
         }
         
-        showPlayerControls();
-        Toast.makeText(this, "Video completed", Toast.LENGTH_SHORT).show();
+        showPlayerControlsToUser();
+        Toast.makeText(this, "ভিডিও সম্পন্ন", Toast.LENGTH_SHORT).show();
     }
-
+    
     // ========================================================================================
-    // VIDEO TITLE MANAGEMENT
+    // ভিডিও টাইটেল ম্যানেজমেন্ট - Video Title Management
     // ========================================================================================
-
+    
     /**
+     * উন্নত ত্রুটি হ্যান্ডলিং সহ ভিডিও টাইটেল ডিসপ্লে সেটআপ করে
      * Setup video title display with improved error handling
      */
-    private void setupVideoTitle() {
-        Log.d(TAG, "Setting up video title");
+    private void setupVideoTitleDisplay() {
+        Log.d(TAG, "ভিডিও টাইটেল সেটআপ করা হচ্ছে");
         
+        // YouTube ভিডিওর জন্য, প্রকৃত টাইটেল আনার চেষ্টা করুন
         // For YouTube videos, try to fetch the actual title
-        if (videoInfoManager.isYouTubeVideo()) {
-            fetchYouTubeTitle();
-        } else if(videoInfoManager.getVideoName() != null && !videoInfoManager.getVideoName().trim().isEmpty()) {
-        	updateVideoTitleDisplay(videoInfoManager.getVideoName());
+        if (videoInfoManager.isYouTubeVideoContent()) {
+            fetchYouTubeTitleAsynchronously();
+        } else if (videoInfoManager.getVideoDisplayName() != null && 
+                   !videoInfoManager.getVideoDisplayName().trim().isEmpty()) {
+            updateVideoTitleInDisplay(videoInfoManager.getVideoDisplayName());
         }
     }
-
+    
     /**
+     * উন্নত হ্যান্ডলিং সহ অ্যাসিঙ্ক্রোনাসভাবে YouTube ভিডিও টাইটেল আনে
      * Fetch YouTube video title asynchronously with improved handling
      */
-    private void fetchYouTubeTitle() {
+    private void fetchYouTubeTitleAsynchronously() {
         try {
-            Log.d(TAG, "Fetching YouTube title for: " + videoInfoManager.getVideoUrl());
+            Log.d(TAG, "YouTube টাইটেল আনা হচ্ছে: " + videoInfoManager.getOriginalVideoUrl());
             
+            // UI ব্লক এড়াতে ব্যাকগ্রাউন্ড থ্রেড ব্যবহার করুন
             // Use a background thread for title fetching to avoid blocking UI
             new Thread(() -> {
                 try {
                     YouTubeTitleFetcher titleFetcher = YouTubeTitleFetcher.getInstance(PlayerActivity.this);
                     
-                    // Try with the original URL first
-                    String urlToUse = videoInfoManager.getVideoUrl();
+                    // প্রথমে মূল URL দিয়ে চেষ্টা করুন - Try with the original URL first
+                    String urlToUse = videoInfoManager.getOriginalVideoUrl();
                     
-                    Log.d(TAG, "Fetching title for video ID/URL: " + urlToUse);
+                    Log.d(TAG, "ভিডিও ID/URL এর জন্য টাইটেল আনা হচ্ছে: " + urlToUse);
                     
                     titleFetcher.getTitle(urlToUse, new YouTubeTitleFetcher.TitleCallback() {
                         @Override
                         public void onSuccess(String title) {
-                            Log.d(TAG, "YouTube title fetched successfully: " + title);
+                            Log.d(TAG, "YouTube টাইটেল সফলভাবে আনা হয়েছে: " + title);
                             
-                            // Ensure we update on the main thread
+                            // মূল থ্রেডে আপডেট নিশ্চিত করুন - Ensure we update on the main thread
                             runOnUiThread(() -> {
                                 if (title != null && !title.trim().isEmpty()) {
-                                    updateVideoTitleDisplay(title);
+                                    updateVideoTitleInDisplay(title);
                                 } else {
-                                    Log.w(TAG, "Received empty title, keeping original");
+                                    Log.w(TAG, "খালি টাইটেল পেয়েছি, মূল রাখা হচ্ছে");
                                 }
                             });
                         }
                         
                         @Override
                         public void onError(String error) {
-                            Log.w(TAG, "Failed to fetch YouTube title: " + error);
+                            Log.w(TAG, "YouTube টাইটেল আনতে ব্যর্থ: " + error);
                             
-                            // Keep the original title on error
+                            // ত্রুটিতে মূল টাইটেল রাখুন - Keep the original title on error
                             runOnUiThread(() -> {
-                                String fallbackTitle = videoInfoManager.getVideoName();
+                                String fallbackTitle = videoInfoManager.getVideoDisplayName();
                                 if (fallbackTitle != null && !fallbackTitle.trim().isEmpty()) {
-                                    updateVideoTitleDisplay(fallbackTitle);
+                                    updateVideoTitleInDisplay(fallbackTitle);
                                 }
                             });
                         }
                     });
                     
                 } catch (Exception e) {
-                    Log.e(TAG, "Exception while fetching YouTube title", e);
+                    Log.e(TAG, "YouTube টাইটেল আনার সময় ব্যতিক্রম", e);
                     
-                    // Fallback to original title
+                    // মূল টাইটেলে ফলব্যাক - Fallback to original title
                     runOnUiThread(() -> {
-                        String fallbackTitle = videoInfoManager.getVideoName();
+                        String fallbackTitle = videoInfoManager.getVideoDisplayName();
                         if (fallbackTitle != null) {
-                            updateVideoTitleDisplay(fallbackTitle);
+                            updateVideoTitleInDisplay(fallbackTitle);
                         }
                     });
                 }
             }).start();
             
         } catch (Exception e) {
-            Log.e(TAG, "Error setting up YouTube title fetch", e);
-            // Use original title as fallback
-            updateVideoTitleDisplay(videoInfoManager.getVideoName());
+            Log.e(TAG, "YouTube টাইটেল আনার সেটআপে ত্রুটি", e);
+            // ফলব্যাক হিসেবে মূল টাইটেল ব্যবহার করুন - Use original title as fallback
+            updateVideoTitleInDisplay(videoInfoManager.getVideoDisplayName());
         }
     }
-
+    
     /**
-     * Extract YouTube video ID from various URL formats
-     */
-    private String extractYouTubeVideoId(String url) {
-        if (url == null || url.trim().isEmpty()) {
-            return null;
-        }
-        
-        try {
-            // Handle different YouTube URL formats
-            String videoId = null;
-            
-            // Standard YouTube URL: https://www.youtube.com/watch?v=VIDEO_ID
-            if (url.contains("youtube.com/watch?v=")) {
-                int startIndex = url.indexOf("v=") + 2;
-                int endIndex = url.indexOf("&", startIndex);
-                if (endIndex == -1) {
-                    endIndex = url.length();
-                }
-                videoId = url.substring(startIndex, endIndex);
-            }
-            // Short YouTube URL: https://youtu.be/VIDEO_ID
-            else if (url.contains("youtu.be/")) {
-                int startIndex = url.lastIndexOf("/") + 1;
-                int endIndex = url.indexOf("?", startIndex);
-                if (endIndex == -1) {
-                    endIndex = url.length();
-                }
-                videoId = url.substring(startIndex, endIndex);
-            }
-            // Mobile YouTube URL: https://m.youtube.com/watch?v=VIDEO_ID
-            else if (url.contains("m.youtube.com/watch?v=")) {
-                int startIndex = url.indexOf("v=") + 2;
-                int endIndex = url.indexOf("&", startIndex);
-                if (endIndex == -1) {
-                    endIndex = url.length();
-                }
-                videoId = url.substring(startIndex, endIndex);
-            }
-            // If it's already just a video ID (11 characters)
-            else if (url.length() == 11 && url.matches("[a-zA-Z0-9_-]+")) {
-                videoId = url;
-            }
-            
-            Log.d(TAG, "Extracted video ID: " + videoId + " from URL: " + url);
-            return videoId;
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Error extracting YouTube video ID from: " + url, e);
-            return null;
-        }
-    }
-
-    /**
+     * যাচাইকরণ এবং ফরম্যাটিং সহ UI তে ভিডিও টাইটেল আপডেট করে
      * Update video title in UI with validation and formatting
      */
-    private void updateVideoTitleDisplay(String title) {
+    private void updateVideoTitleInDisplay(String title) {
         if (title == null || title.trim().isEmpty()) {
-            Log.w(TAG, "Attempted to set empty title");
+            Log.w(TAG, "খালি টাইটেল সেট করার চেষ্টা");
             return;
         }
         
-        // Ensure we're on the main thread
+        // নিশ্চিত করুন যে আমরা মূল থ্রেডে আছি - Ensure we're on the main thread
         if (Looper.myLooper() != Looper.getMainLooper()) {
-            runOnUiThread(() -> updateVideoTitleDisplay(title));
+            runOnUiThread(() -> updateVideoTitleInDisplay(title));
             return;
         }
         
         try {
-            if (binding != null && binding.channelTitleText != null) {
-                // Clean and format the title
+            if (viewBinding != null && viewBinding.channelTitleText != null) {
+                // টাইটেল পরিষ্কার এবং ফরম্যাট করুন - Clean and format the title
                 String cleanTitle = title.trim();
                 
-                // Limit title length if too long
+                // খুব দীর্ঘ হলে টাইটেলের দৈর্ঘ্য সীমিত করুন - Limit title length if too long
                 if (cleanTitle.length() > 100) {
                     cleanTitle = cleanTitle.substring(0, 97) + "...";
                 }
                 
-                binding.channelTitleText.setText(cleanTitle);
-                Log.d(TAG, "Video title updated to: " + cleanTitle);
+                viewBinding.channelTitleText.setText(cleanTitle);
+                Log.d(TAG, "ভিডিও টাইটেল আপডেট করা হয়েছে: " + cleanTitle);
                 
             } else {
-                Log.w(TAG, "Cannot update title - binding or text view is null");
+                Log.w(TAG, "টাইটেল আপডেট করতে পারছি না - বাইন্ডিং বা টেক্সট ভিউ null");
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error updating video title display", e);
+            Log.e(TAG, "ভিডিও টাইটেল ডিসপ্লে আপডেট করতে ত্রুটি", e);
         }
     }
-
+    
     /**
+     * ভিডিও টাইটেল জোরপূর্বক রিফ্রেশ করে (প্রয়োজনে বাহ্যিকভাবে কল করা যেতে পারে)
      * Force refresh the video title (can be called externally if needed)
      */
-    public void refreshVideoTitle() {
-        Log.d(TAG, "Force refreshing video title");
-        setupVideoTitle();
+    public void forceRefreshVideoTitle() {
+        Log.d(TAG, "জোরপূর্বক ভিডিও টাইটেল রিফ্রেশ করা হচ্ছে");
+        setupVideoTitleDisplay();
     }
-
+    
     // ========================================================================================
-    // USER INTERFACE SETUP
+    // ইউজার ইন্টারফেস সেটআপ - User Interface Setup
     // ========================================================================================
     
     /**
+     * সমস্ত ইউজার ইন্টারফেস কম্পোনেন্ট সেটআপ করে
      * Setup all user interface components
      */
-    private void setupUserInterface() {
-        setupMainViewClickListener();
-        setupTopBarControls();
-        setupCenterPlaybackControls();
-        setupBottomBarControls();
-        setupSeekBarControls();
+    private void setupUserInterfaceComponents() {
+        setupMainViewClickHandler();
+        setupTopBarControlButtons();
+        setupCenterPlaybackControlButtons();
+        setupBottomBarControlButtons();
+        setupSeekBarControlHandlers();
         
-        Log.d(TAG, "User interface setup completed");
+        Log.d(TAG, "ইউজার ইন্টারফেস সেটআপ সম্পন্ন");
     }
     
     /**
+     * কন্ট্রোল টগলের জন্য মূল ভিউ ক্লিক লিসেনার সেটআপ করে
      * Setup main view click listener for control toggle
      */
-    private void setupMainViewClickListener() {
-        binding.getRoot().setOnClickListener(view -> {
-            if (stateManager.isLocked()) {
-                showLockButtonTemporarily();
+    private void setupMainViewClickHandler() {
+        viewBinding.getRoot().setOnClickListener(view -> {
+            if (playerStateManager.isPlayerCurrentlyLocked()) {
+                showLockButtonTemporarilyToUser();
             } else {
-                toggleControlsVisibility();
+                toggleControlsVisibilityState();
             }
         });
     }
     
     /**
+     * টপ বার কন্ট্রোল বাটন সেটআপ করে
      * Setup top bar control buttons
      */
-    private void setupTopBarControls() {
-        binding.closeButton.setOnClickListener(v -> {
-            Log.d(TAG, "Close button clicked");
+    private void setupTopBarControlButtons() {
+        viewBinding.closeButton.setOnClickListener(v -> {
+            Log.d(TAG, "বন্ধ বাটন ক্লিক করা হয়েছে");
             finish();
         });
         
-        binding.resizeButton.setOnClickListener(v -> {
-            Log.d(TAG, "Resize button clicked");
-            toggleScreenOrientation();
+        viewBinding.resizeButton.setOnClickListener(v -> {
+            Log.d(TAG, "রিসাইজ বাটন ক্লিক করা হয়েছে");
+            toggleScreenOrientationMode();
         });
     }
     
     /**
+     * কেন্দ্রীয় প্লেব্যাক কন্ট্রোল বাটন সেটআপ করে
      * Setup center playback control buttons
      */
-    private void setupCenterPlaybackControls() {
-        binding.playPauseButton.setOnClickListener(v -> {
-            Log.d(TAG, "Play/Pause button clicked");
-            togglePlayPause();
+    private void setupCenterPlaybackControlButtons() {
+        viewBinding.playPauseButton.setOnClickListener(v -> {
+            Log.d(TAG, "প্লে/পজ বাটন ক্লিক করা হয়েছে");
+            togglePlayPauseState();
         });
         
-        binding.rewindButton.setOnClickListener(v -> {
-            Log.d(TAG, "Rewind button clicked");
-            seekRelative(-SEEK_INCREMENT_MS);
+        viewBinding.rewindButton.setOnClickListener(v -> {
+            Log.d(TAG, "রিওয়াইন্ড বাটন ক্লিক করা হয়েছে");
+            seekToRelativePosition(-SEEK_INCREMENT_MILLISECONDS);
         });
         
-        binding.forwardButton.setOnClickListener(v -> {
-            Log.d(TAG, "Forward button clicked");
-            seekRelative(SEEK_INCREMENT_MS);
+        viewBinding.forwardButton.setOnClickListener(v -> {
+            Log.d(TAG, "ফরওয়ার্ড বাটন ক্লিক করা হয়েছে");
+            seekToRelativePosition(SEEK_INCREMENT_MILLISECONDS);
         });
     }
     
     /**
+     * বটম বার কন্ট্রোল বাটন সেটআপ করে
      * Setup bottom bar control buttons
      */
-    private void setupBottomBarControls() {
-        binding.lockButton.setOnClickListener(v -> {
-            Log.d(TAG, "Lock button clicked");
-            togglePlayerLock();
+    private void setupBottomBarControlButtons() {
+        viewBinding.lockButton.setOnClickListener(v -> {
+            Log.d(TAG, "লক বাটন ক্লিক করা হয়েছে");
+            togglePlayerLockState();
         });
         
-        binding.fullscreenButton.setOnClickListener(v -> {
-            Log.d(TAG, "Fullscreen button clicked");
-            toggleScreenOrientation();
+        viewBinding.fullscreenButton.setOnClickListener(v -> {
+            Log.d(TAG, "ফুলস্ক্রিন বাটন ক্লিক করা হয়েছে");
+            toggleScreenOrientationMode();
         });
         
-        binding.volumeButton.setOnClickListener(v -> {
-            Log.d(TAG, "Volume button clicked");
-            handleVolumeControl();
+        viewBinding.volumeButton.setOnClickListener(v -> {
+            Log.d(TAG, "ভলিউম বাটন ক্লিক করা হয়েছে");
+            handleVolumeControlAction();
         });
         
-        binding.settingsButton.setOnClickListener(v -> {
-            Log.d(TAG, "Settings button clicked");
-            handlePlayerSettings();
+        viewBinding.settingsButton.setOnClickListener(v -> {
+            Log.d(TAG, "সেটিংস বাটন ক্লিক করা হয়েছে");
+            handlePlayerSettingsAction();
         });
     }
     
     /**
+     * নির্ভুল নিয়ন্ত্রণ সহ সিক বার সেটআপ করে
      * Setup seek bar with precise control
      */
-    private void setupSeekBarControls() {
-        binding.seekBar.setMax(SEEK_BAR_PRECISION);
-        binding.seekBar.setOnSeekBarChangeListener(new SeekBarChangeListener());
+    private void setupSeekBarControlHandlers() {
+        viewBinding.seekBar.setMax(SEEK_BAR_MAXIMUM_PRECISION);
+        viewBinding.seekBar.setOnSeekBarChangeListener(new SeekBarChangeHandler());
     }
     
     /**
+     * উন্নত সিক বার পরিবর্তন লিসেনার
      * Enhanced seek bar change listener
      */
-    private class SeekBarChangeListener implements SeekBar.OnSeekBarChangeListener {
+    private class SeekBarChangeHandler implements SeekBar.OnSeekBarChangeListener {
         
         @Override
         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-            if (fromUser && exoPlayer != null) {
-                updateTimeDisplayForProgress(progress);
+            if (fromUser && mediaPlayer != null) {
+                updateTimeDisplayForSeekProgress(progress);
             }
         }
         
         @Override
         public void onStartTrackingTouch(SeekBar seekBar) {
-            Log.d(TAG, "User started seeking");
+            Log.d(TAG, "ইউজার সিকিং শুরু করেছে");
             
-            stateManager.setUserSeeking(true);
-            stopProgressUpdates();
-            cancelScheduledHideControls();
+            playerStateManager.setUserSeekingState(true);
+            stopProgressUpdateCycle();
+            cancelScheduledControlsHiding();
         }
         
         @Override
         public void onStopTrackingTouch(SeekBar seekBar) {
-            Log.d(TAG, "User stopped seeking");
+            Log.d(TAG, "ইউজার সিকিং বন্ধ করেছে");
             
-            if (exoPlayer != null) {
-                performSeekToProgress(seekBar.getProgress());
+            if (mediaPlayer != null) {
+                performSeekToSpecificProgress(seekBar.getProgress());
             }
             
-            stateManager.setUserSeeking(false);
-            startProgressUpdates();
-            scheduleAutoHideControls();
+            playerStateManager.setUserSeekingState(false);
+            startProgressUpdateCycle();
+            scheduleAutomaticControlsHiding();
         }
     }
-
+    
     // ========================================================================================
-    // PLAYBACK CONTROL METHODS
+    // প্লেব্যাক কন্ট্রোল মেথড - Playback Control Methods
     // ========================================================================================
     
     /**
+     * যাচাইকরণ সহ প্লে/পজ স্টেট টগল করে
      * Toggle play/pause state with validation
      */
-    private void togglePlayPause() {
-        if (exoPlayer == null) {
-            Log.w(TAG, "Cannot toggle play/pause - player is null");
+    private void togglePlayPauseState() {
+        if (mediaPlayer == null) {
+            Log.w(TAG, "প্লে/পজ টগল করতে পারছি না - প্লেয়ার null");
             return;
         }
         
         try {
-            if (exoPlayer.isPlaying()) {
-                exoPlayer.pause();
-                Log.d(TAG, "Player paused");
+            if (mediaPlayer.isPlaying()) {
+                mediaPlayer.pause();
+                Log.d(TAG, "প্লেয়ার পজ করা হয়েছে");
             } else {
-                exoPlayer.play();
-                Log.d(TAG, "Player resumed");
+                mediaPlayer.play();
+                Log.d(TAG, "প্লেয়ার পুনরায় শুরু করা হয়েছে");
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error toggling play/pause", e);
+            Log.e(TAG, "প্লে/পজ টগল করতে ত্রুটি", e);
         }
     }
     
     /**
+     * প্লে/পজ বাটনের চেহারা আপডেট করে
      * Update play/pause button appearance
      */
-    private void updatePlayPauseButtonState(boolean isPlaying) {
-        if (binding != null) {
-            binding.playPauseButton.setImageResource(
+    private void updatePlayPauseButtonAppearance(boolean isPlaying) {
+        if (viewBinding != null) {
+            viewBinding.playPauseButton.setImageResource(
                 isPlaying ? R.drawable.ic_pause : R.drawable.ic_play);
         }
     }
     
     /**
+     * সীমা পরীক্ষা সহ আপেক্ষিক অবস্থানে সিক করে
      * Seek to relative position with bounds checking
      */
-    private void seekRelative(long seekMilliseconds) {
-        if (exoPlayer == null) {
-            Log.w(TAG, "Cannot seek - player is null");
+    private void seekToRelativePosition(long seekMilliseconds) {
+        if (mediaPlayer == null) {
+            Log.w(TAG, "সিক করতে পারছি না - প্লেয়ার null");
             return;
         }
         
         try {
-            long currentPosition = exoPlayer.getCurrentPosition();
+            long currentPosition = mediaPlayer.getCurrentPosition();
             long newPosition = currentPosition + seekMilliseconds;
-            long duration = exoPlayer.getDuration();
+            long duration = mediaPlayer.getDuration();
             
+            // অবস্থান বৈধ সীমার মধ্যে আছে তা নিশ্চিত করুন
             // Ensure position is within valid bounds
             if (duration != C.TIME_UNSET) {
                 newPosition = Math.max(0, Math.min(newPosition, duration));
@@ -1023,116 +1115,122 @@ public class PlayerActivity extends AppCompatActivity {
                 newPosition = Math.max(0, newPosition);
             }
             
-            exoPlayer.seekTo(newPosition);
-            stateManager.setLastKnownPosition(newPosition);
+            mediaPlayer.seekTo(newPosition);
+            playerStateManager.updateLastKnownPosition(newPosition);
             
-            Log.d(TAG, "Seeked to position: " + newPosition);
+            Log.d(TAG, "অবস্থানে সিক করা হয়েছে: " + newPosition);
             
         } catch (Exception e) {
-            Log.e(TAG, "Error during seek operation", e);
+            Log.e(TAG, "সিক অপারেশনে ত্রুটি", e);
         }
     }
     
     /**
+     * প্রগ্রেস বার অবস্থানের ভিত্তিতে সিক সম্পাদন করে
      * Perform seek based on progress bar position
      */
-    private void performSeekToProgress(int progress) {
-        if (exoPlayer == null) {
-            Log.w(TAG, "Cannot seek to progress - player is null");
+    private void performSeekToSpecificProgress(int progress) {
+        if (mediaPlayer == null) {
+            Log.w(TAG, "প্রগ্রেসে সিক করতে পারছি না - প্লেয়ার null");
             return;
         }
         
         try {
-            long duration = exoPlayer.getDuration();
+            long duration = mediaPlayer.getDuration();
             if (duration != C.TIME_UNSET && duration > 0) {
-                long newPosition = (duration * progress) / SEEK_BAR_PRECISION;
-                exoPlayer.seekTo(newPosition);
-                stateManager.setLastKnownPosition(newPosition);
+                long newPosition = (duration * progress) / SEEK_BAR_MAXIMUM_PRECISION;
+                mediaPlayer.seekTo(newPosition);
+                playerStateManager.updateLastKnownPosition(newPosition);
                 
-                Log.d(TAG, "Seeked to progress position: " + newPosition);
+                Log.d(TAG, "প্রগ্রেস অবস্থানে সিক করা হয়েছে: " + newPosition);
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error seeking to progress", e);
+            Log.e(TAG, "প্রগ্রেসে সিক করতে ত্রুটি", e);
         }
     }
-
+    
     // ========================================================================================
-    // PROGRESS TRACKING
+    // প্রগ্রেস ট্র্যাকিং - Progress Tracking
     // ========================================================================================
     
     /**
+     * সঠিক সময়সূচী সহ প্রগ্রেস আপডেট শুরু করে
      * Start progress updates with proper scheduling
      */
-    private void startProgressUpdates() {
-        stopProgressUpdates(); // Ensure no duplicate updates
+    private void startProgressUpdateCycle() {
+        stopProgressUpdateCycle(); // ডুপ্লিকেট আপডেট নিশ্চিত করুন না
         
-        if (progressUpdateRunnable != null) {
-            progressHandler.post(progressUpdateRunnable);
+        if (progressUpdateTask != null) {
+            progressUpdateHandler.post(progressUpdateTask);
         }
     }
     
     /**
+     * প্রগ্রেস আপডেট বন্ধ করে
      * Stop progress updates
      */
-    private void stopProgressUpdates() {
-        if (progressUpdateRunnable != null) {
-            progressHandler.removeCallbacks(progressUpdateRunnable);
+    private void stopProgressUpdateCycle() {
+        if (progressUpdateTask != null) {
+            progressUpdateHandler.removeCallbacks(progressUpdateTask);
         }
     }
     
     /**
+     * বর্তমান প্লেব্যাক অবস্থান সহ প্রগ্রেস ডিসপ্লে আপডেট করে
      * Update progress display with current playback position
      */
-    private void updateProgressDisplay() {
-        if (exoPlayer == null || binding == null) return;
+    private void updateProgressDisplayInformation() {
+        if (mediaPlayer == null || viewBinding == null) return;
         
         try {
-            long currentPosition = exoPlayer.getCurrentPosition();
-            long duration = exoPlayer.getDuration();
+            long currentPosition = mediaPlayer.getCurrentPosition();
+            long duration = mediaPlayer.getDuration();
             
-            // Update current time display
-            binding.currentTimeText.setText(formatTime(currentPosition));
+            // বর্তমান সময় ডিসপ্লে আপডেট করুন - Update current time display
+            viewBinding.currentTimeText.setText(formatTimeToReadableString(currentPosition));
             
-            // Update duration and progress
+            // সময়কাল এবং প্রগ্রেস আপডেট করুন - Update duration and progress
             if (duration != C.TIME_UNSET && duration > 0) {
-                binding.totalTimeText.setText(formatTime(duration));
-                int progress = (int) ((currentPosition * SEEK_BAR_PRECISION) / duration);
-                binding.seekBar.setProgress(progress);
+                viewBinding.totalTimeText.setText(formatTimeToReadableString(duration));
+                int progress = (int) ((currentPosition * SEEK_BAR_MAXIMUM_PRECISION) / duration);
+                viewBinding.seekBar.setProgress(progress);
             } else {
-                binding.totalTimeText.setText("--:--");
-                binding.seekBar.setProgress(0);
+                viewBinding.totalTimeText.setText("--:--");
+                viewBinding.seekBar.setProgress(0);
             }
             
-            // Update state
-            stateManager.setLastKnownPosition(currentPosition);
+            // স্টেট আপডেট করুন - Update state
+            playerStateManager.updateLastKnownPosition(currentPosition);
             
         } catch (Exception e) {
-            Log.e(TAG, "Error updating progress display", e);
+            Log.e(TAG, "প্রগ্রেস ডিসপ্লে আপডেট করতে ত্রুটি", e);
         }
     }
     
     /**
+     * সিক বার প্রগ্রেসের জন্য সময় ডিসপ্লে আপডেট করে
      * Update time display for seek bar progress
      */
-    private void updateTimeDisplayForProgress(int progress) {
-        if (exoPlayer == null || binding == null) return;
+    private void updateTimeDisplayForSeekProgress(int progress) {
+        if (mediaPlayer == null || viewBinding == null) return;
         
         try {
-            long duration = exoPlayer.getDuration();
+            long duration = mediaPlayer.getDuration();
             if (duration != C.TIME_UNSET && duration > 0) {
-                long newPosition = (duration * progress) / SEEK_BAR_PRECISION;
-                binding.currentTimeText.setText(formatTime(newPosition));
+                long newPosition = (duration * progress) / SEEK_BAR_MAXIMUM_PRECISION;
+                viewBinding.currentTimeText.setText(formatTimeToReadableString(newPosition));
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error updating time display for progress", e);
+            Log.e(TAG, "প্রগ্রেসের জন্য সময় ডিসপ্লে আপডেট করতে ত্রুটি", e);
         }
     }
     
     /**
+     * মিলিসেকেন্ডে সময়কে পাঠযোগ্য ফরম্যাটে ফরম্যাট করে (HH:MM:SS বা MM:SS)
      * Format time in milliseconds to readable format (HH:MM:SS or MM:SS)
      */
     @SuppressLint("DefaultLocale")
-    private String formatTime(long milliseconds) {
+    private String formatTimeToReadableString(long milliseconds) {
         if (milliseconds < 0) return "00:00";
         
         long totalSeconds = milliseconds / 1000;
@@ -1146,333 +1244,379 @@ public class PlayerActivity extends AppCompatActivity {
             return String.format("%02d:%02d", minutes, seconds);
         }
     }
-
+    
     // ========================================================================================
-    // CONTROLS VISIBILITY MANAGEMENT
+    // কন্ট্রোল দৃশ্যমানতা ম্যানেজমেন্ট - Controls Visibility Management
     // ========================================================================================
     
     /**
+     * বুদ্ধিমত্তার সাথে কন্ট্রোল দৃশ্যমানতা টগল করে
      * Toggle controls visibility intelligently
      */
-    private void toggleControlsVisibility() {
-        if (stateManager.areControlsVisible()) {
-            hidePlayerControls();
+    private void toggleControlsVisibilityState() {
+        if (playerStateManager.areControlsCurrentlyVisible()) {
+            hidePlayerControlsFromView();
         } else {
-            showPlayerControls();
+            showPlayerControlsToUser();
         }
     }
     
     /**
+     * সঠিক স্টেট ম্যানেজমেন্ট সহ প্লেয়ার কন্ট্রোল দেখায়
      * Show player controls with proper state management
      */
-    private void showPlayerControls() {
-        if (binding == null) return;
+    private void showPlayerControlsToUser() {
+        if (viewBinding == null) return;
         
         try {
-            binding.controlsContainer.setVisibility(View.VISIBLE);
-            stateManager.setControlsVisible(true);
+            viewBinding.controlsContainer.setVisibility(View.VISIBLE);
+            playerStateManager.setControlsVisibilityState(true);
             
-            if (stateManager.isLocked()) {
-                showOnlyLockButton();
+            if (playerStateManager.isPlayerCurrentlyLocked()) {
+                showOnlyLockButtonToUser();
             } else {
-                showAllControlElements();
+                showAllControlElementsToUser();
             }
             
-            scheduleAutoHideControls();
-            Log.d(TAG, "Player controls shown");
+            scheduleAutomaticControlsHiding();
+            Log.d(TAG, "প্লেয়ার কন্ট্রোল দেখানো হয়েছে");
             
         } catch (Exception e) {
-            Log.e(TAG, "Error showing player controls", e);
+            Log.e(TAG, "প্লেয়ার কন্ট্রোল দেখাতে ত্রুটি", e);
         }
     }
     
     /**
+     * প্লেয়ার কন্ট্রোল লুকায়
      * Hide player controls
      */
-    private void hidePlayerControls() {
-        if (binding == null) return;
+    private void hidePlayerControlsFromView() {
+        if (viewBinding == null) return;
         
         try {
-            binding.controlsContainer.setVisibility(View.GONE);
-            stateManager.setControlsVisible(false);
-            cancelScheduledHideControls();
+            viewBinding.controlsContainer.setVisibility(View.GONE);
+            playerStateManager.setControlsVisibilityState(false);
+            cancelScheduledControlsHiding();
             
-            Log.d(TAG, "Player controls hidden");
+            Log.d(TAG, "প্লেয়ার কন্ট্রোল লুকানো হয়েছে");
             
         } catch (Exception e) {
-            Log.e(TAG, "Error hiding player controls", e);
+            Log.e(TAG, "প্লেয়ার কন্ট্রোল লুকাতে ত্রুটি", e);
         }
     }
     
     /**
+     * আনলক অবস্থায় সমস্ত কন্ট্রোল এলিমেন্ট দেখায়
      * Show all control elements when unlocked
      */
-    private void showAllControlElements() {
-        if (binding == null) return;
+    private void showAllControlElementsToUser() {
+        if (viewBinding == null) return;
         
-        binding.topBar.setVisibility(View.VISIBLE);
-        binding.centerControls.setVisibility(View.VISIBLE);
-        binding.bottomControls.setVisibility(View.VISIBLE);
+        viewBinding.topBar.setVisibility(View.VISIBLE);
+        viewBinding.centerControls.setVisibility(View.VISIBLE);
+        viewBinding.bottomControls.setVisibility(View.VISIBLE);
         
-        // Show all bottom control buttons
-        binding.fullscreenButton.setVisibility(View.VISIBLE);
-        binding.volumeButton.setVisibility(View.VISIBLE);
-        binding.settingsButton.setVisibility(View.VISIBLE);
-        binding.lockButton.setVisibility(View.VISIBLE);
+        // সমস্ত বটম কন্ট্রোল বাটন দেখান - Show all bottom control buttons
+        viewBinding.fullscreenButton.setVisibility(View.VISIBLE);
+        viewBinding.volumeButton.setVisibility(View.VISIBLE);
+        viewBinding.settingsButton.setVisibility(View.VISIBLE);
+        viewBinding.lockButton.setVisibility(View.VISIBLE);
     }
     
     /**
+     * প্লেয়ার লক থাকলে শুধুমাত্র লক বাটন দেখায়
      * Show only lock button when player is locked
      */
-    private void showOnlyLockButton() {
-        if (binding == null) return;
+    private void showOnlyLockButtonToUser() {
+        if (viewBinding == null) return;
         
-        binding.topBar.setVisibility(View.GONE);
-        binding.centerControls.setVisibility(View.GONE);
-        binding.bottomControls.setVisibility(View.VISIBLE);
+        viewBinding.topBar.setVisibility(View.GONE);
+        viewBinding.centerControls.setVisibility(View.GONE);
+        viewBinding.bottomControls.setVisibility(View.VISIBLE);
         
-        // Hide all buttons except lock button
-        binding.fullscreenButton.setVisibility(View.GONE);
-        binding.volumeButton.setVisibility(View.GONE);
-        binding.settingsButton.setVisibility(View.GONE);
-        binding.lockButton.setVisibility(View.VISIBLE);
+        // লক বাটন ছাড়া সব বাটন লুকান - Hide all buttons except lock button
+        viewBinding.fullscreenButton.setVisibility(View.GONE);
+        viewBinding.volumeButton.setVisibility(View.GONE);
+        viewBinding.settingsButton.setVisibility(View.GONE);
+        viewBinding.lockButton.setVisibility(View.VISIBLE);
     }
     
     /**
+     * প্লেয়ার লক থাকলে সাময়িকভাবে লক বাটন দেখায়
      * Show lock button temporarily when player is locked
      */
-    private void showLockButtonTemporarily() {
-        if (binding == null) return;
+    private void showLockButtonTemporarilyToUser() {
+        if (viewBinding == null) return;
         
         try {
-            binding.controlsContainer.setVisibility(View.VISIBLE);
-            showOnlyLockButton();
+            viewBinding.controlsContainer.setVisibility(View.VISIBLE);
+            showOnlyLockButtonToUser();
             
-            mainHandler.removeCallbacks(hideLockButtonRunnable);
-            mainHandler.postDelayed(hideLockButtonRunnable, LOCK_BUTTON_HIDE_DELAY_MS);
+            mainThreadHandler.removeCallbacks(hideLockButtonTask);
+            mainThreadHandler.postDelayed(hideLockButtonTask, LOCK_BUTTON_HIDE_DELAY_MILLISECONDS);
             
         } catch (Exception e) {
-            Log.e(TAG, "Error showing lock button temporarily", e);
+            Log.e(TAG, "সাময়িকভাবে লক বাটন দেখাতে ত্রুটি", e);
         }
     }
     
     /**
+     * লক অবস্থায় বিলম্বের পরে লক বাটন লুকায়
      * Hide lock button after delay when locked
      */
-    private void hideLockButtonDelayed() {
-        if (stateManager.isLocked() && binding != null) {
-            binding.controlsContainer.setVisibility(View.GONE);
+    private void hideLockButtonAfterDelay() {
+        if (playerStateManager.isPlayerCurrentlyLocked() && viewBinding != null) {
+            viewBinding.controlsContainer.setVisibility(View.GONE);
         }
     }
     
     /**
+     * কন্ট্রোলের স্বয়ংক্রিয় লুকানো নির্ধারণ করে
      * Schedule automatic hiding of controls
      */
-    private void scheduleAutoHideControls() {
-        if (stateManager.isLocked()) return;
+    private void scheduleAutomaticControlsHiding() {
+        if (playerStateManager.isPlayerCurrentlyLocked()) return;
         
-        cancelScheduledHideControls();
-        mainHandler.postDelayed(hideControlsRunnable, CONTROLS_AUTO_HIDE_DELAY_MS);
+        cancelScheduledControlsHiding();
+        mainThreadHandler.postDelayed(hideControlsTask, CONTROL_AUTO_HIDE_DELAY_MILLISECONDS);
     }
     
     /**
+     * নির্ধারিত কন্ট্রোল লুকানো বাতিল করে
      * Cancel scheduled hiding of controls
      */
-    private void cancelScheduledHideControls() {
-        mainHandler.removeCallbacks(hideControlsRunnable);
+    private void cancelScheduledControlsHiding() {
+        mainThreadHandler.removeCallbacks(hideControlsTask);
     }
-
+    
     // ========================================================================================
-    // PLAYER LOCK FUNCTIONALITY
+    // প্লেয়ার লক কার্যকারিতা - Player Lock Functionality
     // ========================================================================================
     
     /**
+     * প্লেয়ার লক স্টেট টগল করে
      * Toggle player lock state
      */
-    private void togglePlayerLock() {
-        boolean newLockState = !stateManager.isLocked();
-        stateManager.setLocked(newLockState);
+    private void togglePlayerLockState() {
+        boolean newLockState = !playerStateManager.isPlayerCurrentlyLocked();
+        playerStateManager.setPlayerLockState(newLockState);
         
         if (newLockState) {
-            lockPlayer();
+            lockPlayerControls();
         } else {
-            unlockPlayer();
+            unlockPlayerControls();
         }
     }
     
     /**
+     * প্লেয়ার কন্ট্রোল লক করে
      * Lock player controls
      */
-    private void lockPlayer() {
-        if (binding == null) return;
+    private void lockPlayerControls() {
+        if (viewBinding == null) return;
         
         try {
-            binding.lockButton.setImageResource(R.drawable.ic_lock_open);
-            showOnlyLockButton();
+            viewBinding.lockButton.setImageResource(R.drawable.ic_lock_open);
+            showOnlyLockButtonToUser();
             
-            Toast.makeText(this, "Player locked - tap to unlock", Toast.LENGTH_SHORT).show();
-            Log.d(TAG, "Player locked");
+            Toast.makeText(this, "প্লেয়ার লক করা হয়েছে - আনলক করতে ট্যাপ করুন", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "প্লেয়ার লক করা হয়েছে");
             
         } catch (Exception e) {
-            Log.e(TAG, "Error locking player", e);
+            Log.e(TAG, "প্লেয়ার লক করতে ত্রুটি", e);
         }
     }
     
     /**
+     * প্লেয়ার কন্ট্রোল আনলক করে
      * Unlock player controls
      */
-    private void unlockPlayer() {
-        if (binding == null) return;
+    private void unlockPlayerControls() {
+        if (viewBinding == null) return;
         
         try {
-            binding.lockButton.setImageResource(R.drawable.ic_lock);
-            showPlayerControls();
+            viewBinding.lockButton.setImageResource(R.drawable.ic_lock);
+            showPlayerControlsToUser();
             
-            Toast.makeText(this, "Player unlocked", Toast.LENGTH_SHORT).show();
-            Log.d(TAG, "Player unlocked");
+            Toast.makeText(this, "প্লেয়ার আনলক করা হয়েছে", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "প্লেয়ার আনলক করা হয়েছে");
             
         } catch (Exception e) {
-            Log.e(TAG, "Error unlocking player", e);
+            Log.e(TAG, "প্লেয়ার আনলক করতে ত্রুটি", e);
         }
     }
-
+    
     // ========================================================================================
-    // SCREEN ORIENTATION MANAGEMENT
+    // স্ক্রিন ওরিয়েন্টেশন ম্যানেজমেন্ট - Screen Orientation Management
     // ========================================================================================
     
     /**
+     * ল্যান্ডস্কেপ এবং পোর্ট্রেটের মধ্যে স্ক্রিন ওরিয়েন্টেশন টগল করে
      * Toggle screen orientation between landscape and portrait
      */
-    private void toggleScreenOrientation() {
+    private void toggleScreenOrientationMode() {
         try {
             int currentOrientation = getResources().getConfiguration().orientation;
             
-            if (currentOrientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+            if (currentOrientation == Configuration.ORIENTATION_LANDSCAPE) {
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
-                Log.d(TAG, "Switched to portrait orientation");
+                Log.d(TAG, "পোর্ট্রেট ওরিয়েন্টেশনে পরিবর্তিত");
             } else {
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-                Log.d(TAG, "Switched to landscape orientation");
+                Log.d(TAG, "ল্যান্ডস্কেপ ওরিয়েন্টেশনে পরিবর্তিত");
             }
             
         } catch (Exception e) {
-            Log.e(TAG, "Error toggling screen orientation", e);
+            Log.e(TAG, "স্ক্রিন ওরিয়েন্টেশন টগল করতে ত্রুটি", e);
         }
+        
+        viewBinding.playerView.onResume();
     }
-
+    
     // ========================================================================================
-    // ADDITIONAL CONTROL HANDLERS
+    // অতিরিক্ত কন্ট্রোল হ্যান্ডলার - Additional Control Handlers
     // ========================================================================================
     
     /**
+     * ভলিউম কন্ট্রোল হ্যান্ডেল করে (ভবিষ্যত বাস্তবায়নের জন্য প্লেসহোল্ডার)
      * Handle volume control (placeholder for future implementation)
      */
-    private void handleVolumeControl() {
-        Toast.makeText(this, "Volume controls - Coming soon", Toast.LENGTH_SHORT).show();
-        // TODO: Implement volume control panel with system volume integration
+    private void handleVolumeControlAction() {
+        Toast.makeText(this, "ভলিউম কন্ট্রোল - শীঘ্রই আসছে", Toast.LENGTH_SHORT).show();
+        // TODO: সিস্টেম ভলিউম ইন্টিগ্রেশন সহ ভলিউম কন্ট্রোল প্যানেল বাস্তবায়ন করুন
     }
     
     /**
+     * প্লেয়ার সেটিংস হ্যান্ডেল করে (ভবিষ্যত বাস্তবায়নের জন্য প্লেসহোল্ডার)
      * Handle player settings (placeholder for future implementation)
      */
-    private void handlePlayerSettings() {
-        Toast.makeText(this, "Player settings - Coming soon", Toast.LENGTH_SHORT).show();
-        // TODO: Implement settings panel (quality selection, subtitles, playback speed, etc.)
+    private void handlePlayerSettingsAction() {
+        Toast.makeText(this, "প্লেয়ার সেটিংস - শীঘ্রই আসছে", Toast.LENGTH_SHORT).show();
+        // TODO: সেটিংস প্যানেল বাস্তবায়ন করুন (কোয়ালিটি নির্বাচন, সাবটাইটেল, প্লেব্যাক গতি, ইত্যাদি)
     }
-
+    
     // ========================================================================================
-    // STATE PERSISTENCE
+    // স্টেট পার্সিস্টেন্স - State Persistence
     // ========================================================================================
     
     /**
+     * প্লেয়ার বিরতি দেয় এবং বর্তমান স্টেট সেভ করে
      * Pause player and save current state
      */
-    private void pausePlayerAndSaveState() {
-        if (exoPlayer != null) {
+    private void pausePlayerAndSaveCurrentState() {
+        if (mediaPlayer != null) {
             try {
-                stateManager.setShouldAutoPlay(exoPlayer.isPlaying());
-                exoPlayer.pause();
+                playerStateManager.setAutoPlayState(mediaPlayer.isPlaying());
+                mediaPlayer.pause();
                 
-                Log.d(TAG, "Player paused and state saved");
+                Log.d(TAG, "প্লেয়ার বিরতি দেওয়া হয়েছে এবং স্টেট সেভ করা হয়েছে");
                 
             } catch (Exception e) {
-                Log.e(TAG, "Error pausing player and saving state", e);
+                Log.e(TAG, "প্লেয়ার বিরতি দিতে এবং স্টেট সেভ করতে ত্রুটি", e);
             }
         }
     }
     
     /**
+     * পুনরুদ্ধারের জন্য বর্তমান প্লেয়ার স্টেট সেভ করে
      * Save current player state for restoration
      */
-    private void saveCurrentPlayerState() {
-        if (exoPlayer != null) {
+    private void saveCurrentPlayerStateForRestoration() {
+        if (mediaPlayer != null) {
             try {
-                stateManager.setLastKnownPosition(exoPlayer.getCurrentPosition());
-                stateManager.setLastPlaybackState(exoPlayer.getPlaybackState());
+                playerStateManager.updateLastKnownPosition(mediaPlayer.getCurrentPosition());
+                playerStateManager.updateLastPlaybackState(mediaPlayer.getPlaybackState());
                 
-                Log.d(TAG, "Player state saved");
+                Log.d(TAG, "প্লেয়ার স্টেট সেভ করা হয়েছে");
                 
             } catch (Exception e) {
-                Log.e(TAG, "Error saving player state", e);
+                Log.e(TAG, "প্লেয়ার স্টেট সেভ করতে ত্রুটি", e);
             }
         }
     }
-
+    
     // ========================================================================================
-    // RESOURCE MANAGEMENT
+    // রিসোর্স ম্যানেজমেন্ট - Resource Management
     // ========================================================================================
     
     /**
+     * সমস্ত রিসোর্স রিলিজ করে এবং পরিষ্কার করে
      * Release all resources and perform cleanup
      */
-    private void releaseAllResources() {
+    private void releaseAllResourcesAndCleanup() {
         try {
-            Log.d(TAG, "Starting resource cleanup");
+            Log.d(TAG, "রিসোর্স পরিষ্কার করা শুরু");
             
-            // Stop all scheduled tasks
-            stopProgressUpdates();
-            mainHandler.removeCallbacksAndMessages(null);
-            progressHandler.removeCallbacksAndMessages(null);
+            // সমস্ত নির্ধারিত কাজ বন্ধ করুন - Stop all scheduled tasks
+            stopProgressUpdateCycle();
+            mainThreadHandler.removeCallbacksAndMessages(null);
+            progressUpdateHandler.removeCallbacksAndMessages(null);
             
-            // Release ExoPlayer
-            if (exoPlayer != null) {
-                exoPlayer.release();
-                exoPlayer = null;
-                Log.d(TAG, "ExoPlayer released");
+            // ExoPlayer রিলিজ করুন - Release ExoPlayer
+            if (mediaPlayer != null) {
+                mediaPlayer.release();
+                mediaPlayer = null;
+                Log.d(TAG, "ExoPlayer রিলিজ করা হয়েছে");
             }
             
-            // Clear state
-            stateManager.reset();
-            errorRecoveryManager.reset();
+            // স্টেট পরিষ্কার করুন - Clear state
+            playerStateManager.resetAllStates();
+            errorRecoveryManager.resetErrorRecoveryState();
             
-            // Clear binding reference
-            binding = null;
+            // বাইন্ডিং রেফারেন্স পরিষ্কার করুন - Clear binding reference
+            viewBinding = null;
             
-            Log.d(TAG, "Resource cleanup completed");
+            Log.d(TAG, "রিসোর্স পরিষ্কার করা সম্পন্ন");
             
         } catch (Exception e) {
-            Log.e(TAG, "Error during resource cleanup", e);
+            Log.e(TAG, "রিসোর্স পরিষ্কার করার সময় ত্রুটি", e);
         }
     }
-
+    
     // ========================================================================================
-    // UTILITY METHODS
+    // ইউটিলিটি মেথড - Utility Methods
     // ========================================================================================
     
     /**
+     * ত্রুটি বার্তা দেখায় এবং অ্যাক্টিভিটি শেষ করে
      * Show error message and finish activity
      */
-    private void showErrorAndFinish(String errorMessage) {
-        Log.e(TAG, "Showing error and finishing: " + errorMessage);
+    private void showErrorMessageAndFinishActivity(String errorMessage) {
+        Log.e(TAG, "ত্রুটি দেখানো হচ্ছে এবং শেষ করা হচ্ছে: " + errorMessage);
         
         Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
         finish();
     }
     
     /**
+     * অ্যাক্টিভিটি অপারেশনের জন্য বৈধ অবস্থায় আছে কিনা পরীক্ষা করে
      * Check if activity is in a valid state for operations
      */
-    private boolean isActivityValid() {
-        return !isFinishing() && !isDestroyed() && binding != null;
+    private boolean isActivityInValidState() {
+        return !isFinishing() && !isDestroyed() && viewBinding != null;
+    }
+    
+    /**
+     * বর্তমান প্লেয়ার অবস্থা লগ করে (ডিবাগিং এর জন্য)
+     * Log current player state (for debugging)
+     */
+    private void logCurrentPlayerState() {
+        if (mediaPlayer != null) {
+            Log.d(TAG, "বর্তমান প্লেয়ার স্টেট: " +
+                "অবস্থান=" + mediaPlayer.getCurrentPosition() +
+                ", সময়কাল=" + mediaPlayer.getDuration() +
+                ", চলছে=" + mediaPlayer.isPlaying() +
+                ", লক=" + playerStateManager.isPlayerCurrentlyLocked());
+        }
+    }
+    
+    /**
+     * প্লেয়ার স্বাস্থ্য পরীক্ষা করে
+     * Check player health
+     */
+    private boolean isPlayerHealthy() {
+        return mediaPlayer != null && 
+               playerStateManager.isPlayerInitialized() && 
+               isActivityInValidState();
     }
 }

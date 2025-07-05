@@ -62,7 +62,6 @@
                  android:maxLines="1"
                  tools:ignore="HardcodedText"
                  android:id="@+id/channel_title_text"
-                 android:text="SONY SAB (1280x720)"
                  android:textStyle="normal" />
 
             <ImageView
