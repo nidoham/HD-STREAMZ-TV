@@ -11,6 +11,8 @@ import com.nidoham.hdstreamztv.databinding.ActivityMainBinding;
 public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private MainViewPagerAdapter viewPagerAdapter;
+    
+    public static boolean DEBUG = App.DEBUG;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

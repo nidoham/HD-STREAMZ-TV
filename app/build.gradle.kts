@@ -52,15 +52,21 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-database")
     
+    implementation("androidx.preference:preference:1.2.1")
+    
     implementation("com.squareup.okhttp3:okhttp-urlconnection:4.12.0")
-
+    
+    
+    val newPipe = "v0.24.6"
     // ✅ NewPipeExtractor with rhino excluded
-    implementation("com.github.TeamNewPipe.NewPipeExtractor:NewPipeExtractor:v0.24.6") {
+    implementation("com.github.TeamNewPipe.NewPipeExtractor:NewPipeExtractor:$newPipe") {
         exclude(group = "org.mozilla", module = "rhino")
     }
-
+    
     // ✅ Safe Rhino version
     implementation("org.mozilla:rhino:1.7.13")
+    
+    implementation("com.github.TeamNewPipe:nanojson:1d9e1aea9049fc9f85e68b43ba39fe7be1c1f751")
 
     // ✅ ExoPlayer / Media3
     val media3Version = "1.3.1"

@@ -5,28 +5,13 @@
       "selection": {
         "end": {
           "column": 1,
-          "index": 2389,
-          "line": 79
+          "index": 5316,
+          "line": 169
         },
         "start": {
           "column": 1,
-          "index": 2389,
-          "line": 79
-        }
-      }
-    },
-    {
-      "file": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/java/com/nidoham/hdstreamztv/DownloadImpl.java",
-      "selection": {
-        "end": {
-          "column": 1,
-          "index": 10029,
-          "line": 252
-        },
-        "start": {
-          "column": 1,
-          "index": 10029,
-          "line": 252
+          "index": 5316,
+          "line": 169
         }
       }
     }
