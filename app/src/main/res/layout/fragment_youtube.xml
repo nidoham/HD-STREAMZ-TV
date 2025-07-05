@@ -1,169 +1,167 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout 
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res/auto"
-    android:id="@+id/coordinator"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@android:color/black">
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res/auto"
+     android:layout_height="match_parent"
+     android:layout_width="match_parent"
+     android:background="@android:color/black"
+     android:paddingBottom="80dp"
+     android:id="@+id/coordinator">
 
-    <!-- SwipeRefreshLayout - Pull to Refresh সাপোর্ট -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipe_refresh"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
+         android:layout_height="match_parent"
+         android:layout_width="match_parent"
+         android:id="@+id/swipe_refresh">
 
-        <!-- Main WebView for YouTube - মূল YouTube ভিউয়ার -->
-        <WebView
-            android:id="@+id/webview"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@android:color/black"
-            android:scrollbars="none"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:layerType="hardware" />
+        <android.webkit.WebView
+             android:layout_height="match_parent"
+             android:layout_width="match_parent"
+             android:scrollbars="none"
+             android:background="@android:color/black"
+             android:focusableInTouchMode="true"
+             android:layerType="hardware"
+             android:focusable="true"
+             android:id="@+id/webview">
+
+        </android.webkit.WebView>
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <!-- Top Progress Bar - উপরের প্রগ্রেস বার (YouTube স্টাইল) -->
     <ProgressBar
-        android:id="@+id/progressBar"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="4dp"
-        android:layout_gravity="top"
-        android:max="100"
-        android:progress="0"
-        android:progressTint="@android:color/holo_red_light"
-        android:progressBackgroundTint="@android:color/transparent"
-        android:visibility="gone" />
+         android:layout_height="4dp"
+         android:layout_width="match_parent"
+         android:visibility="gone"
+         android:max="100"
+         android:progressBackgroundTint="@android:color/transparent"
+         android:progressTint="@android:color/holo_red_light"
+         style="?android:attr/progressBarStyleHorizontal"
+         android:progress="0"
+         android:id="@+id/progressBar"
+         android:layout_gravity="top" />
 
-    <!-- Center Loading Indicator - কেন্দ্রীয় লোডিং ইন্ডিকেটর -->
     <ProgressBar
-        android:id="@+id/loading_indicator"
-        style="?android:attr/progressBarStyleLarge"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_gravity="center"
-        android:indeterminate="true"
-        android:visibility="gone"
-        android:indeterminateTint="@android:color/holo_red_light" />
+         android:layout_height="48dp"
+         android:layout_width="48dp"
+         android:visibility="gone"
+         android:indeterminate="true"
+         style="?android:attr/progressBarStyleLarge"
+         android:indeterminateTint="@android:color/holo_red_light"
+         android:id="@+id/loading_indicator"
+         android:layout_gravity="center" />
 
-    <!-- Network Status Container - নেটওয়ার্ক স্ট্যাটাস কন্টেইনার -->
     <LinearLayout
-        android:id="@+id/network_status_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top"
-        android:background="@android:color/holo_orange_dark"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        android:visibility="gone"
-        android:gravity="center">
+         android:layout_height="wrap_content"
+         android:layout_width="match_parent"
+         android:visibility="gone"
+         android:background="@android:color/holo_orange_dark"
+         android:gravity="center"
+         android:padding="8dp"
+         android:orientation="horizontal"
+         android:id="@+id/network_status_container"
+         android:layout_gravity="top">
 
         <ImageView
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:layout_marginEnd="8dp"
-            android:src="@android:drawable/stat_notify_error"
-            android:tint="@android:color/white" />
+             android:layout_height="16dp"
+             android:layout_width="16dp"
+             android:layout_marginEnd="8dp"
+             android:src="@android:drawable/stat_notify_error"
+             android:tint="@android:color/white" />
 
         <TextView
-            android:id="@+id/network_status_text"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="ইন্টারনেট সংযোগ নেই"
-            android:textColor="@android:color/white"
-            android:textSize="14sp" />
+             android:layout_height="wrap_content"
+             android:layout_width="0dp"
+             android:textSize="14sp"
+             android:textColor="@android:color/white"
+             android:layout_weight="1"
+             android:id="@+id/network_status_text"
+             android:text="ইন্টারনেট সংযোগ নেই" />
 
         <TextView
-            android:id="@+id/retry_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="?android:attr/selectableItemBackground"
-            android:padding="4dp"
-            android:text="পুনরায় চেষ্টা"
-            android:textColor="@android:color/white"
-            android:textStyle="bold"
-            android:clickable="true"
-            android:focusable="true" />
+             android:layout_height="wrap_content"
+             android:layout_width="wrap_content"
+             android:background="?android:attr/selectableItemBackground"
+             android:clickable="true"
+             android:padding="4dp"
+             android:textColor="@android:color/white"
+             android:focusable="true"
+             android:id="@+id/retry_button"
+             android:text="পুনরায় চেষ্টা"
+             android:textStyle="bold" />
 
     </LinearLayout>
 
-    <!-- Error Message Container - এরর মেসেজ কন্টেইনার -->
     <LinearLayout
-        android:id="@+id/error_container"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@android:color/black"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:padding="32dp"
-        android:visibility="gone">
+         android:layout_height="match_parent"
+         android:layout_width="match_parent"
+         android:visibility="gone"
+         android:background="@android:color/black"
+         android:gravity="center"
+         android:padding="32dp"
+         android:orientation="vertical"
+         android:id="@+id/error_container">
 
         <ImageView
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:layout_marginBottom="16dp"
-            android:src="@android:drawable/stat_notify_error"
-            android:tint="@android:color/darker_gray" />
+             android:layout_height="64dp"
+             android:layout_width="64dp"
+             android:layout_marginBottom="16dp"
+             android:src="@android:drawable/stat_notify_error"
+             android:tint="@android:color/darker_gray" />
 
         <TextView
-            android:id="@+id/error_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:text="সংযোগ সমস্যা"
-            android:textColor="@android:color/white"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+             android:layout_height="wrap_content"
+             android:layout_width="wrap_content"
+             android:layout_marginBottom="8dp"
+             android:textSize="18sp"
+             android:textColor="@android:color/white"
+             android:id="@+id/error_title"
+             android:text="সংযোগ সমস্যা"
+             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/error_message"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            android:gravity="center"
-            android:text="ইন্টারনেট সংযোগ চেক করুন এবং আবার চেষ্টা করুন"
-            android:textColor="@android:color/darker_gray"
-            android:textSize="14sp" />
+             android:layout_height="wrap_content"
+             android:layout_width="wrap_content"
+             android:layout_marginBottom="24dp"
+             android:gravity="center"
+             android:textSize="14sp"
+             android:textColor="@android:color/darker_gray"
+             android:id="@+id/error_message"
+             android:text="ইন্টারনেট সংযোগ চেক করুন এবং আবার চেষ্টা করুন" />
 
         <Button
-            android:id="@+id/retry_error_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@android:color/holo_red_light"
-            android:paddingHorizontal="24dp"
-            android:paddingVertical="12dp"
-            android:text="আবার চেষ্টা করুন"
-            android:textColor="@android:color/white"
-            android:textStyle="bold" />
+             android:layout_height="wrap_content"
+             android:layout_width="wrap_content"
+             android:background="@android:color/holo_red_light"
+             android:paddingVertical="12dp"
+             android:textColor="@android:color/white"
+             android:paddingHorizontal="24dp"
+             android:id="@+id/retry_error_button"
+             android:text="আবার চেষ্টা করুন"
+             android:textStyle="bold" />
 
     </LinearLayout>
 
-    <!-- Fullscreen Video Container - ফুলস্ক্রিন ভিডিও কন্টেইনার -->
     <FrameLayout
-        android:id="@+id/fullscreen_container"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@android:color/black"
-        android:visibility="gone" />
+         android:layout_height="match_parent"
+         android:layout_width="match_parent"
+         android:visibility="gone"
+         android:background="@android:color/black"
+         android:id="@+id/fullscreen_container">
 
-    <!-- Simple Settings Button - সিম্পল সেটিংস বাটন -->
+    </FrameLayout>
+
     <ImageButton
-        android:id="@+id/settings_button"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
-        android:backgroundTint="@android:color/holo_red_light"
-        android:src="@android:drawable/ic_menu_preferences"
-        android:tint="@android:color/white"
-        android:visibility="gone"
-        android:contentDescription="Settings"
-        android:clickable="true"
-        android:focusable="true" />
+         android:layout_height="56dp"
+         android:layout_width="56dp"
+         android:visibility="visible"
+         android:src="@android:drawable/ic_menu_preferences"
+         android:clickable="true"
+         android:tint="@android:color/white"
+         android:focusable="true"
+         android:layout_gravity="bottom|end"
+         android:layout_marginBottom="100dp"
+         android:contentDescription="Settings"
+         android:backgroundTint="@android:color/holo_red_light"
+         android:layout_marginRight="30dp"
+         android:id="@+id/settings_button" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
