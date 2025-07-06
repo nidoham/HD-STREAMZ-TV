@@ -153,15 +153,14 @@
          android:layout_height="56dp"
          android:layout_width="56dp"
          android:visibility="visible"
-         android:src="@android:drawable/ic_menu_preferences"
+         android:layout_marginEnd="30dp"
+         android:src="@drawable/ic_download"
          android:clickable="true"
          android:tint="@android:color/white"
          android:focusable="true"
          android:layout_gravity="bottom|end"
          android:layout_marginBottom="100dp"
-         android:contentDescription="Settings"
-         android:backgroundTint="@android:color/holo_red_light"
-         android:layout_marginRight="30dp"
+         android:background="@drawable/rounded_button"
          android:id="@+id/settings_button" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -4,32 +4,32 @@
       "file": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/java/com/nidoham/hdstreamztv/fragment/YouTubeFragment.java",
       "selection": {
         "end": {
-          "column": 4,
-          "index": 6013,
-          "line": 153
+          "column": 41,
+          "index": 33831,
+          "line": 1005
         },
         "start": {
-          "column": 4,
-          "index": 6013,
-          "line": 153
+          "column": 41,
+          "index": 33831,
+          "line": 1005
         }
       }
     },
     {
-      "file": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/res/layout/fragment_youtube.xml",
+      "file": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/java/com/nidoham/hdstreamztv/dialog/MultipleLinkDialog.java",
       "selection": {
         "end": {
-          "column": 54,
-          "index": 6264,
-          "line": 166
+          "column": 40,
+          "index": 4545,
+          "line": 135
         },
         "start": {
-          "column": 54,
-          "index": 6264,
-          "line": 166
+          "column": 40,
+          "index": 4545,
+          "line": 135
         }
       }
     }
   ],
-  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/res/layout/fragment_youtube.xml"
+  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/java/com/nidoham/hdstreamztv/fragment/YouTubeFragment.java"
 }
