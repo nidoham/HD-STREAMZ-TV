@@ -13,12 +13,21 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable;
 
 import java.util.List;
 
-public class YouTubeVideoExtractor {
+/**
+ * Professional YouTube video extractor using NewPipe ExtractorHelper
+ * Handles video information extraction, stream URLs, and metadata
+ */
+public final class YouTubeVideoExtractor {
     
-    private CompositeDisposable disposables = new CompositeDisposable();
+    private static final String TAG = "YouTubeVideoExtractor";
+    private final CompositeDisposable disposables = new CompositeDisposable();
+    
+    /*//////////////////////////////////////////////////////////////////////////
+    // Callback Interfaces
+    //////////////////////////////////////////////////////////////////////////*/
     
     /**
-     * Interface for video information callbacks
+     * Interface for complete video information callbacks
      */
     public interface OnVideoInfoListener {
         void onVideoInfoReceived(VideoInfo videoInfo);
@@ -43,34 +52,41 @@ public class YouTubeVideoExtractor {
         void onError(String error);
     }
     
+    /*//////////////////////////////////////////////////////////////////////////
+    // Data Classes
+    //////////////////////////////////////////////////////////////////////////*/
+    
     /**
-     * Data class to hold video information
+     * Immutable data class to hold video information
      */
-    public static class VideoInfo {
-        private String title;
-        private String uploader;
-        private String description;
-        private long duration;
-        private long viewCount;
-        private String thumbnailUrl;
-        private String uploadDate;
-        private List<VideoStream> videoStreams;
-        private List<AudioStream> audioStreams;
-        private String url;
+    public static final class VideoInfo {
+        private final String title;
+        private final String uploader;
+        private final String description;
+        private final long duration;
+        private final long viewCount;
+        private final String thumbnailUrl;
+        private final String uploadDate;
+        private final List<VideoStream> videoStreams;
+        private final List<AudioStream> audioStreams;
+        private final String url;
         
         public VideoInfo(StreamInfo streamInfo) {
-            this.title = streamInfo.getName();
-            this.uploader = streamInfo.getUploaderName();
-            this.description = streamInfo.getDescription().getContent();
+            this.title = streamInfo.getName() != null ? streamInfo.getName() : "Unknown Title";
+            this.uploader = streamInfo.getUploaderName() != null ? streamInfo.getUploaderName() : "Unknown Uploader";
+            this.description = streamInfo.getDescription() != null && streamInfo.getDescription().getContent() != null
+                    ? streamInfo.getDescription().getContent() : "No description available";
             this.duration = streamInfo.getDuration();
             this.viewCount = streamInfo.getViewCount();
             
-            // Fix: Use getThumbnails() instead of getThumbnailUrl()
-            this.thumbnailUrl = streamInfo.getThumbnails().isEmpty() ? 
-                               "" : streamInfo.getThumbnails().get(0).getUrl();
+            // Safely get thumbnail URL
+            this.thumbnailUrl = streamInfo.getThumbnails() != null && !streamInfo.getThumbnails().isEmpty()
+                    ? streamInfo.getThumbnails().get(0).getUrl() : "";
             
-            this.uploadDate = streamInfo.getUploadDate() != null ? 
-                             streamInfo.getUploadDate().date().toString() : "";
+            // Safely get upload date
+            this.uploadDate = streamInfo.getUploadDate() != null && streamInfo.getUploadDate().date() != null
+                    ? streamInfo.getUploadDate().date().toString() : "Unknown Date";
+            
             this.videoStreams = streamInfo.getVideoStreams();
             this.audioStreams = streamInfo.getAudioStreams();
             this.url = streamInfo.getUrl();
@@ -88,6 +104,9 @@ public class YouTubeVideoExtractor {
         public List<AudioStream> getAudioStreams() { return audioStreams; }
         public String getUrl() { return url; }
         
+        /**
+         * Format duration in HH:MM:SS or MM:SS format
+         */
         public String getFormattedDuration() {
             if (duration <= 0) return "Unknown";
             
@@ -102,6 +121,9 @@ public class YouTubeVideoExtractor {
             }
         }
         
+        /**
+         * Format view count with K/M suffixes
+         */
         public String getFormattedViewCount() {
             if (viewCount <= 0) return "Unknown";
             
@@ -115,6 +137,10 @@ public class YouTubeVideoExtractor {
         }
     }
     
+    /*//////////////////////////////////////////////////////////////////////////
+    // Public Methods
+    //////////////////////////////////////////////////////////////////////////*/
+    
     /**
      * Extract complete video information
      * @param youtubeUrl YouTube video URL
@@ -125,14 +151,13 @@ public class YouTubeVideoExtractor {
             throw new IllegalArgumentException("Listener cannot be null");
         }
         
-        if (youtubeUrl == null || youtubeUrl.trim().isEmpty()) {
-            listener.onError("Invalid URL", new IllegalArgumentException("URL cannot be empty"));
+        if (!isValidYouTubeUrl(youtubeUrl)) {
+            listener.onError("Invalid YouTube URL", new IllegalArgumentException("URL is not a valid YouTube URL"));
             return;
         }
         
-        int serviceId = ServiceList.YouTube.getServiceId();
+        final int serviceId = ServiceList.YouTube.getServiceId();
         
-        // Notify progress
         listener.onProgress("Extracting video information...");
         
         disposables.add(
@@ -157,7 +182,7 @@ public class YouTubeVideoExtractor {
     }
     
     /**
-     * Extract only video title (simple method)
+     * Extract only video title (lightweight operation)
      * @param youtubeUrl YouTube video URL
      * @param listener Callback listener
      */
@@ -179,7 +204,7 @@ public class YouTubeVideoExtractor {
             
             @Override
             public void onProgress(String message) {
-                // Progress updates for title extraction
+                // Progress updates for title extraction (optional)
             }
         });
     }
@@ -208,29 +233,14 @@ public class YouTubeVideoExtractor {
             
             @Override
             public void onProgress(String message) {
-                // Progress updates for stream extraction
+                // Progress updates for stream extraction (optional)
             }
         });
     }
     
-    /**
-     * Legacy method for backward compatibility
-     * @param youtubeUrl YouTube video URL
-     */
-    public void getVideoTitle(String youtubeUrl) {
-        getVideoTitle(youtubeUrl, new OnTitleListener() {
-            @Override
-            public void onTitleReceived(String title) {
-                onTitleReceived(title);
-            }
-            
-            @Override
-            public void onError(String error) {
-                // Fix: Pass the error string directly instead of creating RuntimeException
-                onError(error);
-            }
-        });
-    }
+    /*//////////////////////////////////////////////////////////////////////////
+    // Static Utility Methods
+    //////////////////////////////////////////////////////////////////////////*/
     
     /**
      * Check if URL is valid YouTube URL
@@ -242,10 +252,12 @@ public class YouTubeVideoExtractor {
             return false;
         }
         
-        return url.contains("youtube.com/watch") || 
-               url.contains("youtu.be/") || 
-               url.contains("youtube.com/v/") ||
-               url.contains("youtube.com/embed/");
+        String lowerUrl = url.toLowerCase();
+        return lowerUrl.contains("youtube.com/watch") || 
+               lowerUrl.contains("youtu.be/") || 
+               lowerUrl.contains("youtube.com/v/") ||
+               lowerUrl.contains("youtube.com/embed/") ||
+               lowerUrl.contains("m.youtube.com/watch");
     }
     
     /**
@@ -260,70 +272,43 @@ public class YouTubeVideoExtractor {
         
         String videoId = null;
         
-        if (url.contains("youtube.com/watch")) {
-            String[] parts = url.split("v=");
-            if (parts.length > 1) {
-                videoId = parts[1].split("&")[0];
+        try {
+            if (url.contains("youtube.com/watch")) {
+                String[] parts = url.split("v=");
+                if (parts.length > 1) {
+                    videoId = parts[1].split("&")[0];
+                }
+            } else if (url.contains("youtu.be/")) {
+                String[] parts = url.split("youtu.be/");
+                if (parts.length > 1) {
+                    videoId = parts[1].split("\\?")[0];
+                }
+            } else if (url.contains("youtube.com/v/")) {
+                String[] parts = url.split("v/");
+                if (parts.length > 1) {
+                    videoId = parts[1].split("\\?")[0];
+                }
+            } else if (url.contains("youtube.com/embed/")) {
+                String[] parts = url.split("embed/");
+                if (parts.length > 1) {
+                    videoId = parts[1].split("\\?")[0];
+                }
             }
-        } else if (url.contains("youtu.be/")) {
-            String[] parts = url.split("youtu.be/");
-            if (parts.length > 1) {
-                videoId = parts[1].split("\\?")[0];
+            
+            // Clean up video ID (remove any trailing characters)
+            if (videoId != null && videoId.length() > 11) {
+                videoId = videoId.substring(0, 11);
             }
-        } else if (url.contains("youtube.com/v/")) {
-            String[] parts = url.split("v/");
-            if (parts.length > 1) {
-                videoId = parts[1].split("\\?")[0];
-            }
-        } else if (url.contains("youtube.com/embed/")) {
-            String[] parts = url.split("embed/");
-            if (parts.length > 1) {
-                videoId = parts[1].split("\\?")[0];
-            }
+        } catch (Exception e) {
+            return null;
         }
         
         return videoId;
     }
     
-    private String getErrorMessage(Throwable throwable) {
-        if (throwable == null) {
-            return "Unknown error occurred";
-        }
-        
-        String message = throwable.getMessage();
-        if (message == null || message.trim().isEmpty()) {
-            return "Error: " + throwable.getClass().getSimpleName();
-        }
-        
-        // Common error messages
-        if (message.contains("Video unavailable")) {
-            return "Video is unavailable or private";
-        } else if (message.contains("network")) {
-            return "Network connection error";
-        } else if (message.contains("timeout")) {
-            return "Request timeout - please try again";
-        } else if (message.contains("blocked")) {
-            return "Video is blocked in your region";
-        } else {
-            return "Error: " + message;
-        }
-    }
-    
-    // Legacy methods for backward compatibility
-    private void onTitleReceived(String title) {
-        if (App.getContext() != null) {
-            Toast.makeText(App.getContext(), title, Toast.LENGTH_SHORT).show();
-        }
-        System.out.println("Video Title: " + title);
-    }
-    
-    // Fix: Change parameter type from Throwable to String
-    private void onError(String error) {
-        if (App.getContext() != null) {
-            Toast.makeText(App.getContext(), error, Toast.LENGTH_LONG).show();
-        }
-        System.err.println("Error getting video info: " + error);
-    }
+    /*//////////////////////////////////////////////////////////////////////////
+    // Resource Management
+    //////////////////////////////////////////////////////////////////////////*/
     
     /**
      * Clean up resources - call this when done
@@ -348,6 +333,39 @@ public class YouTubeVideoExtractor {
     public void cancelAll() {
         if (disposables != null) {
             disposables.clear();
+        }
+    }
+    
+    /*//////////////////////////////////////////////////////////////////////////
+    // Error Handling
+    //////////////////////////////////////////////////////////////////////////*/
+    
+    private String getErrorMessage(Throwable throwable) {
+        if (throwable == null) {
+            return "Unknown error occurred";
+        }
+        
+        String message = throwable.getMessage();
+        if (message == null || message.trim().isEmpty()) {
+            return "Error: " + throwable.getClass().getSimpleName();
+        }
+        
+        // Common error messages for better user experience
+        String lowerMessage = message.toLowerCase();
+        if (lowerMessage.contains("video unavailable") || lowerMessage.contains("not available")) {
+            return "Video is unavailable or private";
+        } else if (lowerMessage.contains("network") || lowerMessage.contains("connection")) {
+            return "Network connection error";
+        } else if (lowerMessage.contains("timeout")) {
+            return "Request timeout - please try again";
+        } else if (lowerMessage.contains("blocked") || lowerMessage.contains("restricted")) {
+            return "Video is blocked in your region";
+        } else if (lowerMessage.contains("copyright")) {
+            return "Video is not available due to copyright restrictions";
+        } else if (lowerMessage.contains("age")) {
+            return "Video requires age verification";
+        } else {
+            return "Error: " + message;
         }
     }
 }

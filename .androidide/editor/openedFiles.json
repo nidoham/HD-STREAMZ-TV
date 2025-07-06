@@ -1,32 +1,32 @@
 {
   "allFiles": [
     {
-      "file": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/java/com/nidoham/hdstreamztv/fragment/YouTubeFragment.java",
+      "file": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/java/com/nidoham/hdstreamztv/newpipe/extractors/helper/YouTubeStreamLinkFetcher.java",
       "selection": {
         "end": {
-          "column": 41,
-          "index": 33831,
-          "line": 1005
+          "column": 37,
+          "index": 25129,
+          "line": 655
         },
         "start": {
-          "column": 41,
-          "index": 33831,
-          "line": 1005
+          "column": 37,
+          "index": 25129,
+          "line": 655
         }
       }
     },
     {
-      "file": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/java/com/nidoham/hdstreamztv/dialog/MultipleLinkDialog.java",
+      "file": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/java/com/nidoham/hdstreamztv/fragment/YouTubeFragment.java",
       "selection": {
         "end": {
-          "column": 40,
-          "index": 4545,
-          "line": 135
+          "column": 39,
+          "index": 34239,
+          "line": 1017
         },
         "start": {
-          "column": 40,
-          "index": 4545,
-          "line": 135
+          "column": 39,
+          "index": 34239,
+          "line": 1017
         }
       }
     }

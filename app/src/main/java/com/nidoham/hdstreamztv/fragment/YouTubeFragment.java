@@ -4,6 +4,8 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import com.nidoham.hdstreamztv.PlayerActivity;
+import com.nidoham.hdstreamztv.example.data.link.youtube.YouTube;
+import com.nidoham.hdstreamztv.newpipe.extractors.helper.YouTubeStreamLinkFetcher;
 import com.nidoham.hdstreamztv.template.model.settings.Template;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -1001,22 +1003,78 @@ public class YouTubeFragment extends Fragment {
     /**
      * Handles download button click
      */
-    private void handleDownloadClick() {
-        try {
-            String channelName = "YouTube";
-            String channelUrl = binding.webview.getUrl().toString().trim();
-            
-            Intent intent = new Intent(getContext(), PlayerActivity.class);
-            intent.putExtra("name", channelName);
-            intent.putExtra("link", channelUrl); // Use this instead
-            intent.putExtra("category", Template.YOUTUBE);
-            getContext().startActivity(intent);
-            showSafeToast("ডাউনলোড ফিচার শীঘ্রই আসছে");
-            Log.d(TAG, "Download button clicked");
-        } catch (Exception e) {
-            Log.e(TAG, "Error handling download click", e);
+    /**
+private void handleDownloadClick() {
+    try {
+        String channelName = "YouTube";
+        String originalUrl = binding.webview.getUrl();
+        
+        if (originalUrl == null || originalUrl.trim().isEmpty()) {
+            Log.e(TAG, "Invalid URL: WebView URL is null or empty");
+            Toast.makeText(getContext(), "No URL available", Toast.LENGTH_SHORT).show();
+            return;
         }
+        
+        final String channelUrl = originalUrl.trim();
+        Log.d(TAG, "Processing URL: " + channelUrl);
+        
+        YouTubeStreamLinkFetcher linkExtractor = new YouTubeStreamLinkFetcher();
+        linkExtractor.extractStreamLink(channelUrl, new YouTubeStreamLinkFetcher.OnStreamLinkListener() {
+            
+            @Override
+            public void onStreamLinkExtracted(YouTubeStreamLinkFetcher.StreamData streamData) {
+                Log.d(TAG, "YouTube URL successfully resolved");
+                
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    try {
+                        String streamUrl = streamData.getVideoUrl();
+                        if (streamUrl == null || streamUrl.isEmpty()) {
+                            Log.e(TAG, "No video stream URL available");
+                            Toast.makeText(getContext(), "No video stream available", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        
+                        Intent intent = new Intent(getContext(), PlayerActivity.class);
+                        intent.putExtra("name", channelName);
+                        intent.putExtra("link", streamUrl);
+                        intent.putExtra("category", Template.YOUTUBE);
+                        
+                        getContext().startActivity(intent);
+                        Log.d(TAG, "PlayerActivity launched with extracted URL");
+                        
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error launching PlayerActivity", e);
+                        Toast.makeText(getContext(), "Failed to launch video player", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+            
+            @Override
+            public void onError(String error, Throwable throwable) {
+                Log.w(TAG, "YouTube URL extraction failed: " + error, throwable);
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    Toast.makeText(getContext(), "Extraction failed: " + error, Toast.LENGTH_SHORT).show();
+                });
+            }
+            
+            @Override
+            public void onExtractionStarted() {
+                Log.d(TAG, "YouTube extraction started");
+            }
+            
+            @Override
+            public void onProgress(String message) {
+                Log.d(TAG, "Extraction progress: " + message);
+            }
+        });
+        
+        Log.d(TAG, "Download button clicked - extraction started");
+        
+    } catch (Exception e) {
+        Log.e(TAG, "Error handling download click", e);
+        Toast.makeText(getContext(), "Unexpected error occurred", Toast.LENGTH_SHORT).show();
     }
+}
 
     /**
      * Handles WebView back press navigation using View Binding
