@@ -4,14 +4,14 @@
       "file": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/java/com/nidoham/hdstreamztv/newpipe/extractors/helper/YouTubeStreamLinkFetcher.java",
       "selection": {
         "end": {
-          "column": 37,
-          "index": 25129,
-          "line": 655
+          "column": 42,
+          "index": 7146,
+          "line": 154
         },
         "start": {
-          "column": 37,
-          "index": 25129,
-          "line": 655
+          "column": 42,
+          "index": 7146,
+          "line": 154
         }
       }
     },
@@ -19,14 +19,14 @@
       "file": "/storage/emulated/0/AndroidIDEProjects/HD STREAMZ TV/app/src/main/java/com/nidoham/hdstreamztv/fragment/YouTubeFragment.java",
       "selection": {
         "end": {
-          "column": 39,
-          "index": 34239,
-          "line": 1017
+          "column": 61,
+          "index": 8186,
+          "line": 254
         },
         "start": {
-          "column": 39,
-          "index": 34239,
-          "line": 1017
+          "column": 61,
+          "index": 8186,
+          "line": 254
         }
       }
     }

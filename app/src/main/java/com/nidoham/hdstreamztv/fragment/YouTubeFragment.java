@@ -37,6 +37,7 @@ import androidx.fragment.app.Fragment;
 
 import com.nidoham.hdstreamztv.databinding.FragmentYoutubeBinding;
 
+import com.nidoham.hdstreamztv.utils.device.Clipboard;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -58,6 +59,8 @@ public class YouTubeFragment extends Fragment {
     // ===============================
     // CONSTANTS & CONFIGURATION
     // ===============================
+    
+    private YouTubeStreamLinkFetcher linkFetcher;
     
     private static final String TAG = "YouTubeFragment";
     
@@ -249,6 +252,7 @@ public class YouTubeFragment extends Fragment {
         try {
             Context context = getContext();
             if (context != null) {
+                linkFetcher = new YouTubeStreamLinkFetcher();
                 sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
                 isFirstLaunch = sharedPreferences.getBoolean(KEY_FIRST_LAUNCH, true);
                 isUserSignedIn = sharedPreferences.getBoolean(KEY_USER_SIGNED_IN, false);
@@ -1000,81 +1004,7 @@ public class YouTubeFragment extends Fragment {
         }
     }
 
-    /**
-     * Handles download button click
-     */
-    /**
-private void handleDownloadClick() {
-    try {
-        String channelName = "YouTube";
-        String originalUrl = binding.webview.getUrl();
-        
-        if (originalUrl == null || originalUrl.trim().isEmpty()) {
-            Log.e(TAG, "Invalid URL: WebView URL is null or empty");
-            Toast.makeText(getContext(), "No URL available", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        
-        final String channelUrl = originalUrl.trim();
-        Log.d(TAG, "Processing URL: " + channelUrl);
-        
-        YouTubeStreamLinkFetcher linkExtractor = new YouTubeStreamLinkFetcher();
-        linkExtractor.extractStreamLink(channelUrl, new YouTubeStreamLinkFetcher.OnStreamLinkListener() {
-            
-            @Override
-            public void onStreamLinkExtracted(YouTubeStreamLinkFetcher.StreamData streamData) {
-                Log.d(TAG, "YouTube URL successfully resolved");
-                
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    try {
-                        String streamUrl = streamData.getVideoUrl();
-                        if (streamUrl == null || streamUrl.isEmpty()) {
-                            Log.e(TAG, "No video stream URL available");
-                            Toast.makeText(getContext(), "No video stream available", Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        
-                        Intent intent = new Intent(getContext(), PlayerActivity.class);
-                        intent.putExtra("name", channelName);
-                        intent.putExtra("link", streamUrl);
-                        intent.putExtra("category", Template.YOUTUBE);
-                        
-                        getContext().startActivity(intent);
-                        Log.d(TAG, "PlayerActivity launched with extracted URL");
-                        
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error launching PlayerActivity", e);
-                        Toast.makeText(getContext(), "Failed to launch video player", Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-            
-            @Override
-            public void onError(String error, Throwable throwable) {
-                Log.w(TAG, "YouTube URL extraction failed: " + error, throwable);
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    Toast.makeText(getContext(), "Extraction failed: " + error, Toast.LENGTH_SHORT).show();
-                });
-            }
-            
-            @Override
-            public void onExtractionStarted() {
-                Log.d(TAG, "YouTube extraction started");
-            }
-            
-            @Override
-            public void onProgress(String message) {
-                Log.d(TAG, "Extraction progress: " + message);
-            }
-        });
-        
-        Log.d(TAG, "Download button clicked - extraction started");
-        
-    } catch (Exception e) {
-        Log.e(TAG, "Error handling download click", e);
-        Toast.makeText(getContext(), "Unexpected error occurred", Toast.LENGTH_SHORT).show();
-    }
-}
+    
 
     /**
      * Handles WebView back press navigation using View Binding
@@ -1540,4 +1470,96 @@ private void handleDownloadClick() {
             Log.e(TAG, "Error cleaning up handlers", e);
         }
     }
+
+    /**
+ * Handles the download/play button click.
+ * It sanitizes complex YouTube URLs (e.g., from playlists or radio), extracts the
+ * appropriate stream link(s), and launches the PlayerActivity with the necessary data.
+ */
+private void handleDownloadClick() {
+    // 1. Prevent multiple rapid clicks while an operation is already in progress.
+    if (linkFetcher.isBusy()) {
+        Toast.makeText(getContext(), "Extraction already in progress...", Toast.LENGTH_SHORT).show();
+        return;
+    }
+
+    // 2. Get the original, potentially complex URL from the WebView.
+    String originalUrl = binding.webview.getUrl();
+
+    // 3. Extract *only* the essential video ID from the original URL.
+    // This is the key step to solve the "URL not accepted" error for playlist links.
+    String videoId = YouTubeStreamLinkFetcher.extractVideoId(originalUrl);
+
+    // 4. Validate that a video ID was successfully extracted.
+    if (videoId == null) {
+        Log.e(TAG, "Could not extract a valid YouTube video ID from URL: " + originalUrl);
+        Toast.makeText(getContext(), "Not a valid YouTube video page.", Toast.LENGTH_SHORT).show();
+        return;
+    }
+
+    // 5. Construct a clean, canonical URL that the extractor is guaranteed to accept.
+    String canonicalUrl = "https://www.youtube.com/watch?v=" + videoId;
+
+    // 6. Provide immediate user feedback and log the start of the operation.
+    Toast.makeText(getContext(), "Fetching video streams...", Toast.LENGTH_SHORT).show();
+    Log.d(TAG, "Sanitized URL for extraction: " + canonicalUrl);
+
+    // 7. Call the extractor with the CLEAN, CANONICAL URL.
+    linkFetcher.extractStreamLink(canonicalUrl, YouTubeStreamLinkFetcher.VideoQuality.BEST, new YouTubeStreamLinkFetcher.OnStreamLinkListener() {
+
+        @Override
+        public void onStreamLinkExtracted(@NonNull YouTubeStreamLinkFetcher.StreamData streamData) {
+            // Check if a valid video URL was actually found.
+            if (streamData.videoUrl == null || streamData.videoUrl.isEmpty()) {
+                Log.e(TAG, "Extraction succeeded but no playable video URL was found.");
+                Toast.makeText(getContext(), "Could not find a playable video stream.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Log.d(TAG, "Stream extracted successfully. Quality: " + streamData.videoQuality + ", Is DASH: " + streamData.isDashStream);
+
+            try {
+                // Check if fragment is still attached to an activity
+                if (getContext() == null) {
+                    return;
+                }
+
+                // Prepare the intent to launch the player.
+                Intent intent = new Intent(getContext(), PlayerActivity.class);
+
+                // Use the real title from the extracted data for a better user experience.
+                intent.putExtra("name", streamData.title);
+                intent.putExtra("link", streamData.videoUrl);
+                intent.putExtra("category", Template.YOUTUBE);
+
+                // CRITICAL: Handle DASH streams by passing the separate audio URL.
+                // Your PlayerActivity must be updated to check for and use this "audioLink" extra.
+                if (streamData.isDashStream && streamData.audioUrl != null) {
+                    Log.d(TAG, "Passing separate DASH streams to player. Audio: " + streamData.audioUrl);
+                    intent.putExtra("audioLink", streamData.audioUrl);
+                }
+
+                getContext().startActivity(intent);
+                Log.d(TAG, "PlayerActivity launched.");
+
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to launch PlayerActivity", e);
+                if (getContext() != null) {
+                    Toast.makeText(getContext(), "Error launching video player.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+
+        @Override
+        public void onError(@NonNull String error, @NonNull Throwable throwable) {
+            // Log the detailed error for debugging purposes.
+            Log.e(TAG, "YouTube URL extraction failed: " + error, throwable);
+
+            // Show a clear, user-friendly error message, checking for context first.
+            if (getContext() != null) {
+                Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_LONG).show();
+            }
+        }
+    });
+}
 }
