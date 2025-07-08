@@ -1,7 +1,6 @@
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
-    // Removed crashlytics as you asked
 }
 
 android {
@@ -27,8 +26,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false  // Disabled minify to fix R8 failure
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
