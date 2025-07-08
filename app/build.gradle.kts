@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
-    id("com.google.firebase.crashlytics") // Optional but useful
+    id("com.google.firebase.crashlytics") version "2.9.9" // ✅ Added version
 }
 
 android {
@@ -46,7 +46,7 @@ android {
     }
 
     lint {
-        abortOnError = false // Prevent Lint from crashing CI
+        abortOnError = false
         checkReleaseBuilds = false
         textReport = true
         textOutput("stdout")
@@ -84,12 +84,12 @@ dependencies {
 
     // NewPipe Extractor
     val newPipe = "v0.24.6"
-    implementation("com.github.TeamNewPipe.NewPipeExtractor:NewPipeExtractor:$newPipe") {
+    implementation("com.github.TeamNewPipe.NewPipeExtractor:$newPipe") {
         exclude(group = "org.mozilla", module = "rhino")
     }
     implementation("org.mozilla:rhino:1.7.13") // Safe Rhino version
-
     implementation("com.github.TeamNewPipe:nanojson:1d9e1aea9049fc9f85e68b43ba39fe7be1c1f751")
+
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
     // Media3 (ExoPlayer)
