@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
-    // Removed: id("com.google.firebase.crashlytics") version "2.9.9"
+    // Removed crashlytics as you asked
 }
 
 android {
@@ -69,7 +69,6 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-database")
-    // Removed: firebase-crashlytics dependency
 
     implementation("androidx.preference:preference:1.2.1")
     implementation("com.squareup.okhttp3:okhttp-urlconnection:4.12.0")
@@ -78,7 +77,7 @@ dependencies {
     implementation("io.reactivex.rxjava3:rxandroid:3.0.2")
 
     val newPipe = "v0.24.6"
-    implementation("com.github.TeamNewPipe.NewPipeExtractor:$newPipe") {
+    implementation("com.github.TeamNewPipe.NewPipeExtractor:NewPipeExtractor:$newPipe") {
         exclude(group = "org.mozilla", module = "rhino")
     }
     implementation("org.mozilla:rhino:1.7.13")
