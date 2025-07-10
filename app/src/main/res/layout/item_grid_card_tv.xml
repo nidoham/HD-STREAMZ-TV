@@ -12,7 +12,7 @@
     android:focusable="true"
     android:foreground="?android:attr/selectableItemBackground">
 
-    <!-- LinearLayout to arrange the logo and title vertically -->
+    <!-- LinearLayout to arrange the logo ,and title vertically -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
