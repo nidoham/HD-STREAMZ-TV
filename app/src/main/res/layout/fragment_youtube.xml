@@ -5,8 +5,7 @@
      android:layout_height="match_parent"
      android:layout_width="match_parent"
      android:background="@android:color/black"
-     android:paddingBottom="80dp"
-     android:id="@+id/coordinator">
+     android:paddingBottom="80dp">
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
          android:layout_height="match_parent"
