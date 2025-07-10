@@ -5,16 +5,31 @@
       "selection": {
         "end": {
           "column": 0,
-          "index": 40682,
-          "line": 1164
+          "index": 57206,
+          "line": 1590
         },
         "start": {
           "column": 0,
-          "index": 40682,
-          "line": 1164
+          "index": 57206,
+          "line": 1590
+        }
+      }
+    },
+    {
+      "file": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/fragment/YouTubeFragment.java",
+      "selection": {
+        "end": {
+          "column": 0,
+          "index": 44545,
+          "line": 1187
+        },
+        "start": {
+          "column": 0,
+          "index": 44545,
+          "line": 1187
         }
       }
     }
   ],
-  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/PlayerActivity.java"
+  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/fragment/YouTubeFragment.java"
 }

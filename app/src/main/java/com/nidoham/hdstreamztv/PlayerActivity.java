@@ -8,12 +8,17 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -30,20 +35,36 @@ import androidx.media3.ui.AspectRatioFrameLayout;
 import com.nidoham.hdstreamztv.databinding.ActivityPlayerBinding;
 import com.nidoham.hdstreamztv.template.model.settings.Template;
 
+import org.schabi.newpipe.extractor.ServiceList;
+import org.schabi.newpipe.extractor.stream.StreamInfo;
+import org.schabi.newpipe.extractor.stream.VideoStream;
+import org.schabi.newpipe.util.ExtractorHelper;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+
 /**
- * Professional Video Player Activity with Enhanced Architecture
+ * Professional Video Player Activity with Enhanced Architecture and Quality Selection
  * 
  * Features:
  * - Robust ExoPlayer integration with proper lifecycle management
  * - Gesture-based controls with intelligent auto-hide functionality
  * - Player lock mechanism to prevent accidental interactions
+ * - Dynamic quality selection and switching during playback
  * - High-precision progress tracking and seeking
  * - Comprehensive error handling with recovery mechanisms
  * - Memory-optimized resource management
  * - Screen orientation change handling without video restart
  * 
  * @author Professional Enhanced Version
- * @version 5.0
+ * @version 6.0
  */
 public class PlayerActivity extends AppCompatActivity {
     
@@ -64,6 +85,7 @@ public class PlayerActivity extends AppCompatActivity {
     private static final String EXTRA_VIDEO_URL = "link";
     private static final String EXTRA_VIDEO_NAME = "name";
     private static final String EXTRA_VIDEO_CATEGORY = "category";
+    private static final String EXTRA_VIDEO_QUALITY = "quality";
     
     // State Save Keys
     private static final String SAVED_PLAYBACK_POSITION = "playback_position";
@@ -78,6 +100,9 @@ public class PlayerActivity extends AppCompatActivity {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final Handler progressHandler = new Handler(Looper.getMainLooper());
     
+    // RxJava Management
+    private final CompositeDisposable compositeDisposable = new CompositeDisposable();
+    
     // Scheduled Tasks
     private final Runnable hideControlsTask = this::hideControls;
     private final Runnable hideLockButtonTask = this::hideLockButtonDelayed;
@@ -87,6 +112,7 @@ public class PlayerActivity extends AppCompatActivity {
     private final PlayerStateManager stateManager = new PlayerStateManager();
     private final VideoInfoManager videoManager = new VideoInfoManager();
     private final ErrorRecoveryManager errorManager = new ErrorRecoveryManager();
+    private final QualityManager qualityManager = new QualityManager();
     
     // ========================================================================================
     // State Management Classes
@@ -143,6 +169,7 @@ public class PlayerActivity extends AppCompatActivity {
         private String videoUrl;
         private String videoName;
         private int videoCategory;
+        private String currentQuality;
         
         public boolean extractFromIntent(@Nullable Bundle extras) {
             if (extras == null) return false;
@@ -150,6 +177,7 @@ public class PlayerActivity extends AppCompatActivity {
             videoUrl = extras.getString(EXTRA_VIDEO_URL);
             videoName = extras.getString(EXTRA_VIDEO_NAME);
             videoCategory = extras.getInt(EXTRA_VIDEO_CATEGORY, -1);
+            currentQuality = extras.getString(EXTRA_VIDEO_QUALITY, "Unknown");
             
             return isValid();
         }
@@ -163,6 +191,10 @@ public class PlayerActivity extends AppCompatActivity {
         public String getVideoUrl() { return videoUrl; }
         public String getVideoName() { return videoName; }
         public int getVideoCategory() { return videoCategory; }
+        public String getCurrentQuality() { return currentQuality; }
+        
+        public void setVideoUrl(String url) { this.videoUrl = url; }
+        public void setCurrentQuality(String quality) { this.currentQuality = quality; }
         
         public boolean isYouTubeVideo() {
             return videoCategory == Template.YOUTUBE;
@@ -209,6 +241,137 @@ public class PlayerActivity extends AppCompatActivity {
         public void reset() {
             retryCount = 0;
             lastErrorTime = 0;
+        }
+    }
+    
+    /**
+     * Manages video quality selection and switching
+     */
+    private class QualityManager {
+        private StreamInfo currentStreamInfo;
+        private List<QualityOption> availableQualities = new ArrayList<>();
+        private QualityOption currentQualityOption;
+        
+        public void setStreamInfo(StreamInfo streamInfo) {
+            this.currentStreamInfo = streamInfo;
+            this.availableQualities = createQualityOptions(streamInfo.getVideoStreams());
+        }
+        
+        public List<QualityOption> getAvailableQualities() {
+            return new ArrayList<>(availableQualities);
+        }
+        
+        public QualityOption getCurrentQuality() {
+            return currentQualityOption;
+        }
+        
+        public void setCurrentQuality(QualityOption quality) {
+            this.currentQualityOption = quality;
+        }
+        
+        public boolean hasMultipleQualities() {
+            return availableQualities.size() > 1;
+        }
+        
+        public StreamInfo getCurrentStreamInfo() {
+            return currentStreamInfo;
+        }
+        
+        private List<QualityOption> createQualityOptions(List<VideoStream> videoStreams) {
+            List<QualityOption> options = new ArrayList<>();
+            Set<String> addedResolutions = new HashSet<>();
+            
+            if (videoStreams == null || videoStreams.isEmpty()) {
+                return options;
+            }
+            
+            // Sort streams by quality (highest first)
+            List<VideoStream> sortedStreams = new ArrayList<>(videoStreams);
+            sortedStreams.sort((stream1, stream2) -> {
+                int height1 = parseResolutionHeight(stream1.getResolution());
+                int height2 = parseResolutionHeight(stream2.getResolution());
+                return Integer.compare(height2, height1); // Descending order
+            });
+            
+            for (VideoStream stream : sortedStreams) {
+                String resolution = stream.getResolution();
+                String format = stream.getFormat() != null ? stream.getFormat().getName() : "Unknown";
+                
+                if (resolution != null && !resolution.trim().isEmpty() && 
+                    !addedResolutions.contains(resolution)) {
+                    
+                    String displayText = formatQualityText(resolution, format);
+                    options.add(new QualityOption(resolution, displayText, stream));
+                    addedResolutions.add(resolution);
+                }
+            }
+            
+            return options;
+        }
+        
+        private int parseResolutionHeight(String resolution) {
+            if (resolution == null || resolution.trim().isEmpty()) {
+                return 0;
+            }
+            
+            try {
+                String numbers = resolution.replaceAll("[^0-9]", "");
+                if (!numbers.isEmpty()) {
+                    return Integer.parseInt(numbers);
+                }
+            } catch (NumberFormatException e) {
+                Log.w(TAG, "Failed to parse resolution: " + resolution);
+            }
+            
+            return 0;
+        }
+        
+        private String formatQualityText(String resolution, String format) {
+            StringBuilder sb = new StringBuilder();
+            
+            // Add resolution
+            sb.append(resolution);
+            
+            // Add quality description
+            int height = parseResolutionHeight(resolution);
+            if (height >= 1080) {
+                sb.append(" (Full HD)");
+            } else if (height >= 720) {
+                sb.append(" (HD)");
+            } else if (height >= 480) {
+                sb.append(" (SD)");
+            }
+            
+            // Add format if available
+            if (format != null && !format.equals("Unknown")) {
+                sb.append(" - ").append(format);
+            }
+            
+            return sb.toString();
+        }
+    }
+    
+    /**
+     * Quality option data class
+     */
+    private static class QualityOption {
+        private final String resolution;
+        private final String displayText;
+        private final VideoStream videoStream;
+        
+        public QualityOption(String resolution, String displayText, VideoStream videoStream) {
+            this.resolution = resolution;
+            this.displayText = displayText;
+            this.videoStream = videoStream;
+        }
+        
+        public String getResolution() { return resolution; }
+        public String getDisplayText() { return displayText; }
+        public VideoStream getVideoStream() { return videoStream; }
+        
+        @Override
+        public String toString() {
+            return displayText;
         }
     }
     
@@ -398,7 +561,13 @@ public class PlayerActivity extends AppCompatActivity {
             createPlayer();
             setupUI();
             setupVideoTitle();
-            prepareMedia();
+            
+            // Load quality information if it's a YouTube video
+            if (videoManager.isYouTubeVideo()) {
+                loadQualityInformation();
+            } else {
+                prepareMedia();
+            }
             
             stateManager.setInitialized(true);
             showControls();
@@ -430,6 +599,56 @@ public class PlayerActivity extends AppCompatActivity {
             Log.e(TAG, "Failed to create ExoPlayer", e);
             throw new RuntimeException("ExoPlayer creation failed", e);
         }
+    }
+    
+    private void loadQualityInformation() {
+        String originalUrl = extractOriginalYouTubeUrl(videoManager.getVideoUrl());
+        if (originalUrl == null) {
+            prepareMedia();
+            return;
+        }
+        
+        int serviceId = ServiceList.YouTube.getServiceId();
+        
+        Disposable disposable = ExtractorHelper.getStreamInfo(serviceId, originalUrl, false)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                streamInfo -> {
+                    if (!isFinishing() && streamInfo != null) {
+                        qualityManager.setStreamInfo(streamInfo);
+                        
+                        // Find current quality option
+                        String currentQuality = videoManager.getCurrentQuality();
+                        for (QualityOption option : qualityManager.getAvailableQualities()) {
+                            if (option.getResolution().equals(currentQuality)) {
+                                qualityManager.setCurrentQuality(option);
+                                break;
+                            }
+                        }
+                        
+                        Log.d(TAG, "Quality information loaded: " + 
+                              qualityManager.getAvailableQualities().size() + " qualities available");
+                    }
+                    
+                    prepareMedia();
+                },
+                throwable -> {
+                    Log.w(TAG, "Failed to load quality information", throwable);
+                    prepareMedia();
+                }
+            );
+        
+        compositeDisposable.add(disposable);
+    }
+    
+    private String extractOriginalYouTubeUrl(String videoUrl) {
+        // This is a simplified extraction - you might need to implement more robust URL parsing
+        // For now, we'll assume the URL contains the video ID or can be used directly
+        if (videoUrl != null && videoUrl.contains("youtube.com")) {
+            return videoUrl;
+        }
+        return null;
     }
     
     private void prepareMedia() {
@@ -1056,6 +1275,133 @@ public class PlayerActivity extends AppCompatActivity {
     }
     
     // ========================================================================================
+    // Quality Selection Dialog
+    // ========================================================================================
+    
+    private void showQualitySelectionDialog() {
+        if (!qualityManager.hasMultipleQualities()) {
+            Toast.makeText(this, "No quality options available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        List<QualityOption> qualities = qualityManager.getAvailableQualities();
+        QualityOption currentQuality = qualityManager.getCurrentQuality();
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select Video Quality");
+        
+        // Create custom adapter for quality selection
+        QualitySelectionAdapter adapter = new QualitySelectionAdapter(this, qualities, currentQuality);
+        
+        builder.setAdapter(adapter, (dialog, which) -> {
+            QualityOption selectedQuality = qualities.get(which);
+            changeVideoQuality(selectedQuality);
+            dialog.dismiss();
+        });
+        
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+        
+        AlertDialog dialog = builder.create();
+        dialog.show();
+        
+        Log.d(TAG, "Quality selection dialog shown with " + qualities.size() + " options");
+    }
+    
+    private void changeVideoQuality(QualityOption newQuality) {
+        if (player == null || newQuality == null) {
+            Log.w(TAG, "Cannot change quality - player or quality is null");
+            return;
+        }
+        
+        try {
+            // Save current playback position
+            long currentPosition = player.getCurrentPosition();
+            boolean wasPlaying = player.isPlaying();
+            
+            // Get new video URL
+            String newVideoUrl = newQuality.getVideoStream().getUrl();
+            
+            if (newVideoUrl == null || newVideoUrl.trim().isEmpty()) {
+                Toast.makeText(this, "Invalid URL for selected quality", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            Log.d(TAG, "Changing quality to: " + newQuality.getResolution());
+            
+            // Update video manager
+            videoManager.setVideoUrl(newVideoUrl);
+            videoManager.setCurrentQuality(newQuality.getResolution());
+            qualityManager.setCurrentQuality(newQuality);
+            
+            // Prepare new media
+            MediaItem mediaItem = MediaItem.fromUri(Uri.parse(newVideoUrl.trim()));
+            player.setMediaItem(mediaItem);
+            player.prepare();
+            
+            // Restore playback position
+            player.seekTo(currentPosition);
+            
+            // Resume playback if it was playing
+            if (wasPlaying) {
+                player.play();
+            }
+            
+            Toast.makeText(this, "Quality changed to " + newQuality.getResolution(), 
+                          Toast.LENGTH_SHORT).show();
+            
+            Log.d(TAG, "Quality successfully changed to: " + newQuality.getResolution());
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error changing video quality", e);
+            Toast.makeText(this, "Failed to change quality: " + e.getMessage(), 
+                          Toast.LENGTH_LONG).show();
+        }
+    }
+    
+    /**
+     * Custom adapter for quality selection dialog
+     */
+    private static class QualitySelectionAdapter extends ArrayAdapter<QualityOption> {
+        private final List<QualityOption> qualities;
+        private final QualityOption currentQuality;
+        
+        public QualitySelectionAdapter(PlayerActivity context, List<QualityOption> qualities, 
+                                     QualityOption currentQuality) {
+            super(context, 0, qualities);
+            this.qualities = qualities;
+            this.currentQuality = currentQuality;
+        }
+        
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                LayoutInflater inflater = LayoutInflater.from(getContext());
+                convertView = inflater.inflate(android.R.layout.simple_list_item_2, parent, false);
+            }
+            
+            QualityOption quality = qualities.get(position);
+            
+            TextView text1 = convertView.findViewById(android.R.id.text1);
+            TextView text2 = convertView.findViewById(android.R.id.text2);
+            
+            text1.setText(quality.getDisplayText());
+            
+            // Show current quality indicator
+            if (currentQuality != null && quality.getResolution().equals(currentQuality.getResolution())) {
+                text2.setText("Currently playing");
+                text2.setTextColor(0xFF4CAF50); // Green color
+            } else {
+                text2.setText("Tap to select");
+                text2.setTextColor(0xFF757575); // Gray color
+            }
+            
+            text2.setTextSize(12);
+            
+            return convertView;
+        }
+    }
+    
+    // ========================================================================================
     // Additional Control Handlers
     // ========================================================================================
     
@@ -1065,8 +1411,59 @@ public class PlayerActivity extends AppCompatActivity {
     }
     
     private void handlePlayerSettings() {
-        Toast.makeText(this, "Player settings - coming soon", Toast.LENGTH_SHORT).show();
-        // TODO: Implement settings panel (quality selection, subtitles, playback speed, etc.)
+        Log.d(TAG, "Player settings requested");
+        
+        // Create settings dialog with quality option
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Player Settings");
+        
+        String[] settingsOptions;
+        if (qualityManager.hasMultipleQualities()) {
+            settingsOptions = new String[]{
+                "Video Quality",
+                "Playback Speed (Coming Soon)",
+                "Audio Settings (Coming Soon)",
+                "Subtitle Settings (Coming Soon)"
+            };
+        } else {
+            settingsOptions = new String[]{
+                "Video Quality (Not Available)",
+                "Playback Speed (Coming Soon)",
+                "Audio Settings (Coming Soon)",
+                "Subtitle Settings (Coming Soon)"
+            };
+        }
+        
+        builder.setItems(settingsOptions, (dialog, which) -> {
+            switch (which) {
+                case 0: // Video Quality
+                    if (qualityManager.hasMultipleQualities()) {
+                        showQualitySelectionDialog();
+                    } else {
+                        Toast.makeText(this, "No quality options available for this video", 
+                                      Toast.LENGTH_SHORT).show();
+                    }
+                    break;
+                case 1: // Playback Speed
+                    Toast.makeText(this, "Playback speed control - coming soon", 
+                                  Toast.LENGTH_SHORT).show();
+                    break;
+                case 2: // Audio Settings
+                    Toast.makeText(this, "Audio settings - coming soon", 
+                                  Toast.LENGTH_SHORT).show();
+                    break;
+                case 3: // Subtitle Settings
+                    Toast.makeText(this, "Subtitle settings - coming soon", 
+                                  Toast.LENGTH_SHORT).show();
+                    break;
+            }
+            dialog.dismiss();
+        });
+        
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+        
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
     
     // ========================================================================================
@@ -1113,6 +1510,11 @@ public class PlayerActivity extends AppCompatActivity {
             mainHandler.removeCallbacksAndMessages(null);
             progressHandler.removeCallbacksAndMessages(null);
             
+            // Dispose RxJava subscriptions
+            if (!compositeDisposable.isDisposed()) {
+                compositeDisposable.clear();
+            }
+            
             if (player != null) {
                 player.release();
                 player = null;
@@ -1152,7 +1554,8 @@ public class PlayerActivity extends AppCompatActivity {
                 "position=" + player.getCurrentPosition() +
                 ", duration=" + player.getDuration() +
                 ", playing=" + player.isPlaying() +
-                ", locked=" + stateManager.isLocked());
+                ", locked=" + stateManager.isLocked() +
+                ", quality=" + videoManager.getCurrentQuality());
         }
     }
     
@@ -1160,5 +1563,28 @@ public class PlayerActivity extends AppCompatActivity {
         return player != null &&
                stateManager.isInitialized() &&
                isActivityValid();
+    }
+    
+    /**
+     * Public method to force refresh quality information (can be called externally)
+     */
+    public void refreshQualityInformation() {
+        if (videoManager.isYouTubeVideo()) {
+            loadQualityInformation();
+        }
+    }
+    
+    /**
+     * Get current video quality
+     */
+    public String getCurrentVideoQuality() {
+        return videoManager.getCurrentQuality();
+    }
+    
+    /**
+     * Check if quality selection is available
+     */
+    public boolean isQualitySelectionAvailable() {
+        return qualityManager.hasMultipleQualities();
     }
 }
