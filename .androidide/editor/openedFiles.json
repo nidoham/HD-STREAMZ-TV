@@ -1,35 +1,20 @@
 {
   "allFiles": [
     {
-      "file": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/PlayerActivity.java",
+      "file": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/MainActivity.java",
       "selection": {
         "end": {
-          "column": 0,
-          "index": 57206,
-          "line": 1590
+          "column": 5,
+          "index": 9965,
+          "line": 259
         },
         "start": {
-          "column": 0,
-          "index": 57206,
-          "line": 1590
-        }
-      }
-    },
-    {
-      "file": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/fragment/YouTubeFragment.java",
-      "selection": {
-        "end": {
-          "column": 0,
-          "index": 44545,
-          "line": 1187
-        },
-        "start": {
-          "column": 0,
-          "index": 44545,
-          "line": 1187
+          "column": 5,
+          "index": 9965,
+          "line": 259
         }
       }
     }
   ],
-  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/fragment/YouTubeFragment.java"
+  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/MainActivity.java"
 }

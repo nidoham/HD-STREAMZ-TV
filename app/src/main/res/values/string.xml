@@ -5,12 +5,25 @@
     <!-- Channel Information -->
     <string name="channel_logo">Channel Logo</string>
 
-    <!-- Main navigation tab titles -->
-    <string name="tab_events">EVENTS</string>
-    <string name="tab_live_tv">LIVE TV</string>
-    <string name="tab_youtube">YOUTUBE</string>
-    <string name="tab_live_radio">LIVE RADIO</string>
-    <string name="tab_favorite">FAVORITE</string>
+    <!-- Tab titles -->
+    <string name="tab_home_title">Home</string>
+    <string name="tab_tv_title">TV</string>
+    <string name="tab_cloud_title">Cloud</string>
+    <string name="tab_guest_title">Guest</string>
+    
+    <!-- Tab descriptions for accessibility -->
+    <string name="tab_home_description">Home tab - Main content</string>
+    <string name="tab_tv_description">TV tab - Television content</string>
+    <string name="tab_cloud_description">Cloud tab - Cloud services</string>
+    <string name="tab_guest_description">Guest tab - Guest features</string>
+    
+    <!-- Action button descriptions -->
+    <string name="action_search_description">Search content</string>
+    <string name="action_notifications_description">View notifications</string>
+    
+    <!-- Messages -->
+    <string name="permissions_required_message">Required permissions are needed for the app to function properly</string>
+    <string name="no_network_connection">No network connection available</string>
 
     <!-- Content descriptions for accessibility -->
     <string name="content_description_search">Search</string>

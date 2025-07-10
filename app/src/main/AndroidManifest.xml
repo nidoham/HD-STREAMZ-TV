@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Essential permissions -->
+    <!-- Essential permissions for streaming and network checks -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     
-    <!-- Mobile-only features -->
-    <uses-feature 
+    <!-- REMOVED: Storage permissions are not needed for the app's current features -->
+    <!-- <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" ... /> -->
+    <!-- <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" /> -->
+
+    <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="true" />
 
@@ -19,23 +22,19 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:resizeableActivity="true">
+        <!-- REMOVED: requestLegacyExternalStorage="true" is no longer needed -->
 
-        <!-- Splash Activity - Entry Point -->
+        <!-- Activities... -->
         <activity
             android:name=".SplashActivity"
             android:exported="true"
-            android:theme="@style/AppTheme.FullScreen"
-            android:resizeableActivity="true"
-            android:supportsPictureInPicture="false">
-            
+            android:theme="@style/AppTheme.FullScreen">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            
         </activity>
 
-        <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="false"
@@ -43,7 +42,6 @@
             android:resizeableActivity="true"
             android:supportsPictureInPicture="false" />
 
-        <!-- Player Activity -->
         <activity
             android:name=".PlayerActivity"
             android:exported="false"
