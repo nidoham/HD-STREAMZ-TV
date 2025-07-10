@@ -1,4 +1,4 @@
-package com.nidoham.hdstreamztv;
+package org.schabi.newpipe;
 
 import android.content.Context;
 
@@ -7,11 +7,14 @@ import androidx.annotation.Nullable;
 import androidx.preference.PreferenceManager;
 
 import com.nidoham.hdstreamztv.error.ReCaptchaActivity;
-import com.nidoham.hdstreamztv.utils.InfoCache;
+
 import org.schabi.newpipe.extractor.downloader.Downloader;
 import org.schabi.newpipe.extractor.downloader.Request;
 import org.schabi.newpipe.extractor.downloader.Response;
 import org.schabi.newpipe.extractor.exceptions.ReCaptchaException;
+import org.schabi.newpipe.util.InfoCache;
+
+import com.nidoham.hdstreamztv.R;
 
 import java.io.IOException;
 import java.util.Arrays;

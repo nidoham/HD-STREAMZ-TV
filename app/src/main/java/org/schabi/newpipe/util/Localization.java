@@ -1,6 +1,4 @@
-package com.nidoham.hdstreamztv.utils;
-
-import static com.nidoham.hdstreamztv.MainActivity.DEBUG;
+package org.schabi.newpipe.util;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -27,9 +25,7 @@ import androidx.preference.PreferenceManager;
 import com.nidoham.hdstreamztv.App;
 import org.ocpsoft.prettytime.PrettyTime;
 import org.ocpsoft.prettytime.units.Decade;
-
 import com.nidoham.hdstreamztv.R;
-
 import org.schabi.newpipe.extractor.ListExtractor;
 import org.schabi.newpipe.extractor.localization.ContentCountry;
 import org.schabi.newpipe.extractor.localization.DateWrapper;
@@ -404,7 +400,7 @@ public final class Localization {
                                                final String textual) {
         if (parsed == null) {
             return textual;
-        } else if (DEBUG && context != null && PreferenceManager
+        } else if (App.DEBUG && context != null && PreferenceManager
                 .getDefaultSharedPreferences(context)
                 .getBoolean(context.getString(R.string.show_original_time_ago_key), false)) {
             return relativeTime(parsed.offsetDateTime()) + " (" + textual + ")";

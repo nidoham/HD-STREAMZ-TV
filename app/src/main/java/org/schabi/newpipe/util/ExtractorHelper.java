@@ -1,5 +1,3 @@
-package com.nidoham.hdstreamztv.newpipe;
-
 /*
  * Copyright 2017 Mauricio Colli <mauriciocolli@outlook.com>
  * ExtractorHelper.java is part of NewPipe
@@ -19,13 +17,12 @@ package com.nidoham.hdstreamztv.newpipe;
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-import com.nidoham.hdstreamztv.newpipe.model.Constants;
-import com.nidoham.hdstreamztv.MainActivity;
-import com.nidoham.hdstreamztv.utils.Localization;
-import com.nidoham.hdstreamztv.utils.text.TextLinkifier;
-import com.nidoham.hdstreamztv.utils.InfoCache;
+package org.schabi.newpipe.util;
+
+import com.nidoham.hdstreamztv.App;
+
 import static org.schabi.newpipe.extractor.utils.Utils.isNullOrEmpty;
-import static com.nidoham.hdstreamztv.utils.text.TextLinkifier.SET_LINK_MOVEMENT_METHOD;
+//import static org.schabi.newpipe.util.text.TextLinkifier.SET_LINK_MOVEMENT_METHOD;
 
 import android.content.Context;
 import android.util.Log;
@@ -38,8 +35,6 @@ import androidx.core.text.HtmlCompat;
 import androidx.preference.PreferenceManager;
 
 import com.nidoham.hdstreamztv.R;
-
-import com.nidoham.hdstreamztv.newpipe.model.*;
 
 import org.schabi.newpipe.extractor.Info;
 import org.schabi.newpipe.extractor.InfoItem;
@@ -58,11 +53,10 @@ import org.schabi.newpipe.extractor.search.SearchInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.schabi.newpipe.extractor.suggestion.SuggestionExtractor;
+//import org.schabi.newpipe.util.text.TextLinkifier;
 
 import java.util.Collections;
 import java.util.List;
-
-import com.nidoham.hdstreamztv.utils.Localization;
 
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
@@ -191,7 +185,7 @@ public final class ExtractorHelper {
     }
 
     public static Single<InfoItemsPage<StreamInfoItem>> getMorePlaylistItems(final int serviceId,
-                                                                         final String url,
+                                                                             final String url,
                                                                              final Page nextPage) {
         checkServiceId(serviceId);
         return Single.fromCallable(() ->
@@ -269,7 +263,7 @@ public final class ExtractorHelper {
         return Maybe.defer(() -> {
             //noinspection unchecked
             final I info = (I) CACHE.getFromKey(serviceId, url, cacheType);
-            if (MainActivity.DEBUG) {
+            if (App.DEBUG) {
                 Log.d(TAG, "loadFromCache() called, info > " + info);
             }
 
@@ -343,10 +337,10 @@ public final class ExtractorHelper {
                 }
             }
 
-            metaInfoSeparator.setVisibility(View.VISIBLE);
+           /* metaInfoSeparator.setVisibility(View.VISIBLE);
             TextLinkifier.fromHtml(metaInfoTextView, stringBuilder.toString(),
                     HtmlCompat.FROM_HTML_SEPARATOR_LINE_BREAK_HEADING, null, null, disposables,
-                    SET_LINK_MOVEMENT_METHOD);
+                    SET_LINK_MOVEMENT_METHOD); */
         }
     }
 

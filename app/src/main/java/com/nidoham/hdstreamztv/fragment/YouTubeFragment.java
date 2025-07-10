@@ -3,10 +3,6 @@ package com.nidoham.hdstreamztv.fragment;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
-import com.nidoham.hdstreamztv.PlayerActivity;
-import com.nidoham.hdstreamztv.example.data.link.youtube.YouTube;
-import com.nidoham.hdstreamztv.newpipe.extractors.helper.YouTubeStreamLinkFetcher;
-import com.nidoham.hdstreamztv.template.model.settings.Template;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
@@ -35,631 +31,226 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.nidoham.hdstreamztv.PlayerActivity;
 import com.nidoham.hdstreamztv.databinding.FragmentYoutubeBinding;
+import com.nidoham.hdstreamztv.example.data.link.youtube.YouTube;
+import com.nidoham.hdstreamztv.template.model.settings.Template;
 
-import com.nidoham.hdstreamztv.utils.device.Clipboard;
-import java.util.concurrent.atomic.AtomicBoolean;
+import org.schabi.newpipe.extractor.ServiceList;
+import org.schabi.newpipe.util.ExtractorHelper;
 
-/**
- * Professional YouTube Fragment Implementation with View Binding
- * 
- * This fragment provides a comprehensive YouTube WebView experience with:
- * - View Binding for type-safe view access
- * - Advanced network monitoring and error handling
- * - Professional lifecycle management
- * - Optimized performance and memory management
- * - Clean architecture and maintainable code structure
- * 
- * @author HD Streamz TV Development Team
- * @version 9.0 - View Binding Edition
- * @since 2024
- */
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+
 public class YouTubeFragment extends Fragment {
-
-    // ===============================
-    // CONSTANTS & CONFIGURATION
-    // ===============================
-    
-    private YouTubeStreamLinkFetcher linkFetcher;
     
     private static final String TAG = "YouTubeFragment";
-    
-    // Preference Constants
     private static final String PREFS_NAME = "youtube_fragment_prefs";
     private static final String KEY_FIRST_LAUNCH = "is_first_launch";
-    private static final String KEY_USER_SIGNED_IN = "user_signed_in";
-    
-    // URL Constants
     private static final String YOUTUBE_SIGNIN_URL = "https://accounts.google.com/signin/v2/identifier?service=youtube";
     private static final String YOUTUBE_URL = "https://www.youtube.com";
     private static final String YOUTUBE_MOBILE_URL = "https://m.youtube.com";
-    
-    // Configuration Constants
     private static final String USER_AGENT = "Mozilla/5.0 (Linux; Android " + Build.VERSION.RELEASE +
-            "; " + Build.MODEL + ") AppleWebKit/537.36 (KHTML, like Gecko) " +
-            "Chrome/120.0.0.0 Mobile Safari/537.36";
-    
-    // Timeout Constants
-    private static final int PAGE_LOAD_TIMEOUT = 20000; // 20 seconds
-    private static final int INITIALIZATION_DELAY = 1000; // 1 second
-    private static final int LOAD_DELAY = 500; // 0.5 seconds
-    
-    // Retry Constants
-    private static final int MAX_RETRY_COUNT = 3;
-    
-    // UI Constants
-    private static final int SWIPE_REFRESH_DISTANCE = 150;
-
-    // ===============================
-    // VIEW BINDING
-    // ===============================
+            "; " + Build.MODEL + ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
     
     private FragmentYoutubeBinding binding;
-
-    // ===============================
-    // CORE MANAGEMENT COMPONENTS
-    // ===============================
-    
-    // Network Management
     private ConnectivityManager connectivityManager;
     private ConnectivityManager.NetworkCallback networkCallback;
-    
-    // Data Management
     private SharedPreferences sharedPreferences;
-    
-    // Threading Management
     private Handler mainHandler;
-
-    // ===============================
-    // STATE MANAGEMENT
-    // ===============================
     
-    // Atomic State Variables (Thread-Safe)
-    private final AtomicBoolean isPageLoaded = new AtomicBoolean(false);
-    private final AtomicBoolean isNetworkAvailable = new AtomicBoolean(false);
-    private final AtomicBoolean isFragmentActive = new AtomicBoolean(false);
-    private final AtomicBoolean isInitialized = new AtomicBoolean(false);
-    private final AtomicBoolean isLoading = new AtomicBoolean(false);
+    // Use CompositeDisposable for better management
+    private final CompositeDisposable compositeDisposable = new CompositeDisposable();
     
-    // User State Variables
     private boolean isFirstLaunch = true;
-    private boolean isUserSignedIn = false;
+    private boolean isNetworkAvailable = false;
+    private boolean isPageLoaded = false;
+    private boolean isFragmentActive = false;
     
-    // Retry Management
-    private int retryCount = 0;
-
-    // ===============================
-    // FRAGMENT LIFECYCLE METHODS
-    // ===============================
-
-    /**
-     * Creates and initializes the fragment view with View Binding
-     */
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, 
-                           @Nullable ViewGroup container,
-                           @Nullable Bundle savedInstanceState) {
-        Log.d(TAG, "Creating YouTube Fragment view with View Binding");
-        
-        try {
-            // Initialize View Binding
-            binding = FragmentYoutubeBinding.inflate(inflater, container, false);
-            
-            if (binding != null) {
-                initializeAllComponents();
-                scheduleInitialization();
-                
-                isInitialized.set(true);
-                Log.d(TAG, "Fragment view created successfully with View Binding");
-                
-                return binding.getRoot();
-            } else {
-                Log.e(TAG, "View Binding initialization failed");
-                return null;
-            }
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Error creating view with View Binding", e);
-            showSafeToast("ভিউ তৈরি করতে সমস্যা হয়েছে");
-            return null;
-        }
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        binding = FragmentYoutubeBinding.inflate(inflater, container, false);
+        initializeComponents();
+        return binding.getRoot();
     }
-
-    /**
-     * Handles fragment resume lifecycle
-     */
+    
     @Override
     public void onResume() {
         super.onResume();
-        isFragmentActive.set(true);
-        
-        try {
-            resumeWebView();
-            registerNetworkCallback();
-            
-            Log.d(TAG, "Fragment resumed successfully");
-        } catch (Exception e) {
-            Log.e(TAG, "Error in onResume", e);
-        }
+        isFragmentActive = true;
+        resumeWebView();
+        registerNetworkCallback();
     }
-
-    /**
-     * Handles fragment pause lifecycle
-     */
+    
     @Override
     public void onPause() {
         super.onPause();
-        isFragmentActive.set(false);
-        
-        try {
-            pauseWebView();
-            Log.d(TAG, "Fragment paused successfully");
-        } catch (Exception e) {
-            Log.e(TAG, "Error in onPause", e);
-        }
+        isFragmentActive = false;
+        pauseWebView();
     }
-
-    /**
-     * Handles fragment destruction and cleanup
-     */
+    
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        isFragmentActive.set(false);
-        isInitialized.set(false);
-        
-        try {
-            performCleanup();
-            
-            // Clean up View Binding
-            if (binding != null) {
-                binding = null;
-                Log.d(TAG, "View Binding cleaned up");
-            }
-            
-            Log.d(TAG, "Fragment destroyed successfully");
-        } catch (Exception e) {
-            Log.e(TAG, "Error in onDestroyView", e);
-        }
+        isFragmentActive = false;
+        cleanup();
+        binding = null;
     }
-
-    // ===============================
-    // INITIALIZATION METHODS
-    // ===============================
-
-    /**
-     * Initializes all fragment components in proper order
-     */
-    private void initializeAllComponents() {
-        initializeHandlers();
-        initializePreferences();
-        setupAllSystems();
-    }
-
-    /**
-     * Initializes threading handlers
-     */
-    private void initializeHandlers() {
+    
+    private void initializeComponents() {
         mainHandler = new Handler(Looper.getMainLooper());
-        Log.d(TAG, "Handlers initialized");
-    }
-
-    /**
-     * Initializes shared preferences
-     */
-    private void initializePreferences() {
-        try {
-            Context context = getContext();
-            if (context != null) {
-                linkFetcher = new YouTubeStreamLinkFetcher();
-                sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                isFirstLaunch = sharedPreferences.getBoolean(KEY_FIRST_LAUNCH, true);
-                isUserSignedIn = sharedPreferences.getBoolean(KEY_USER_SIGNED_IN, false);
-                
-                Log.d(TAG, "Preferences initialized - First launch: " + isFirstLaunch + 
-                       ", User signed in: " + isUserSignedIn);
-            } else {
-                Log.w(TAG, "Context is null, using default preferences");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error initializing preferences", e);
-        }
-    }
-
-    /**
-     * Sets up all system components
-     */
-    private void setupAllSystems() {
+        initializePreferences();
         setupNetworkMonitoring();
         configureWebView();
-        setupUserInterface();
-        setupEventHandlers();
-        
-        // Set initial UI state
-        updateUIState(UIState.IDLE);
+        setupUI();
+        loadYouTube();
     }
-
-    /**
-     * Schedules delayed initialization
-     */
-    private void scheduleInitialization() {
-        scheduleDelayedTask(() -> {
-            if (isFragmentActive.get()) {
-                performInitialLoad();
-            }
-        }, INITIALIZATION_DELAY);
+    
+    private void initializePreferences() {
+        Context context = getContext();
+        if (context != null) {
+            sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            isFirstLaunch = sharedPreferences.getBoolean(KEY_FIRST_LAUNCH, true);
+        }
     }
-
-    // ===============================
-    // WEBVIEW CONFIGURATION
-    // ===============================
-
-    /**
-     * Configures WebView with optimal settings using View Binding
-     */
+    
+    private void setupNetworkMonitoring() {
+        Context context = getContext();
+        if (context != null) {
+            connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            isNetworkAvailable = checkNetworkAvailability();
+            createNetworkCallback();
+        }
+    }
+    
     @SuppressLint("SetJavaScriptEnabled")
     private void configureWebView() {
-        try {
-            if (binding == null || binding.webview == null) {
-                Log.w(TAG, "WebView is null, cannot configure");
-                return;
-            }
-            
-            WebSettings webSettings = binding.webview.getSettings();
-            if (webSettings == null) {
-                Log.w(TAG, "WebSettings is null, cannot configure");
-                return;
-            }
-            
-            // Configure core functionality
-            configureWebViewCore(webSettings);
-            
-            // Configure performance settings
-            configureWebViewPerformance(webSettings);
-            
-            // Configure security settings
-            configureWebViewSecurity(webSettings);
-            
-            // Set up WebView clients and additional settings
-            setupWebViewClients();
-            setupWebViewAdditionalSettings();
-            
-            Log.d(TAG, "WebView configured successfully");
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Error configuring WebView", e);
-        }
-    }
-
-    /**
-     * Configures core WebView functionality
-     */
-    private void configureWebViewCore(WebSettings webSettings) {
-        // JavaScript and DOM support
-        webSettings.setJavaScriptEnabled(true);
-        webSettings.setDomStorageEnabled(true);
-        webSettings.setDatabaseEnabled(true);
+        if (binding.webview == null) return;
         
-        // Viewport and zoom configuration
-        webSettings.setLoadWithOverviewMode(true);
-        webSettings.setUseWideViewPort(true);
-        webSettings.setBuiltInZoomControls(true);
-        webSettings.setDisplayZoomControls(false);
-        webSettings.setSupportZoom(true);
+        WebSettings settings = binding.webview.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setUseWideViewPort(true);
+        settings.setBuiltInZoomControls(true);
+        settings.setDisplayZoomControls(false);
+        settings.setMediaPlaybackRequiresUserGesture(false);
+        settings.setUserAgentString(USER_AGENT);
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         
-        // Media playback optimization
-        webSettings.setMediaPlaybackRequiresUserGesture(false);
-        webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+        // Security settings
+        settings.setAllowFileAccess(false);
+        settings.setAllowContentAccess(false);
         
-        // Location and popup control
-        webSettings.setGeolocationEnabled(true);
-        webSettings.setJavaScriptCanOpenWindowsAutomatically(false);
-    }
-
-    /**
-     * Configures WebView performance settings
-     */
-    private void configureWebViewPerformance(WebSettings webSettings) {
-        // Caching strategy
-        webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        binding.webview.setWebViewClient(new YouTubeWebViewClient());
+        binding.webview.setWebChromeClient(new YouTubeWebChromeClient());
         
-        // Performance improvements
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            webSettings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.TEXT_AUTOSIZING);
-        }
-        
-        // User Agent
-        webSettings.setUserAgentString(USER_AGENT);
-    }
-
-    /**
-     * Configures WebView security settings
-     */
-    private void configureWebViewSecurity(WebSettings webSettings) {
-        webSettings.setAllowFileAccess(false);
-        webSettings.setAllowContentAccess(false);
-        webSettings.setAllowFileAccessFromFileURLs(false);
-        webSettings.setAllowUniversalAccessFromFileURLs(false);
-    }
-
-    /**
-     * Sets up WebView clients
-     */
-    private void setupWebViewClients() {
-        if (binding != null && binding.webview != null) {
-            binding.webview.setWebViewClient(new YouTubeWebViewClient());
-            binding.webview.setWebChromeClient(new YouTubeWebChromeClient());
-        }
-    }
-
-    /**
-     * Sets up additional WebView settings
-     */
-    private void setupWebViewAdditionalSettings() {
-        if (binding == null || binding.webview == null) return;
-        
-        // Cookie management
         setupCookieManager();
-        
-        // Hardware acceleration
         binding.webview.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-        
-        // Focus handling
-        binding.webview.setFocusable(true);
-        binding.webview.setFocusableInTouchMode(true);
     }
-
-    // ===============================
-    // WEBVIEW CLIENT IMPLEMENTATION
-    // ===============================
-
-    /**
-     * Custom WebViewClient for YouTube-specific handling
-     */
-    private class YouTubeWebViewClient extends WebViewClient {
+    
+    private void setupUI() {
+        // Swipe refresh
+        if (binding.swipeRefresh != null) {
+            binding.swipeRefresh.setColorSchemeResources(
+                android.R.color.holo_blue_bright,
+                android.R.color.holo_green_light,
+                android.R.color.holo_orange_light,
+                android.R.color.holo_red_light
+            );
+            binding.swipeRefresh.setOnRefreshListener(this::handleRefresh);
+        }
         
+        // Back press handling
+        if (binding.webview != null) {
+            binding.webview.setOnKeyListener((v, keyCode, event) -> {
+                if (keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
+                    return handleBackPress();
+                }
+                return false;
+            });
+        }
+        
+        // Button handlers
+        if (binding.retryButton != null) {
+            binding.retryButton.setOnClickListener(v -> loadYouTube());
+        }
+        if (binding.settingsButton != null) {
+            binding.settingsButton.setOnClickListener(v -> handleStreamExtraction());
+        }
+    }
+    
+    private void loadYouTube() {
+        if (binding.webview == null) return;
+        
+        if (!isNetworkAvailable) {
+            showNetworkError();
+            return;
+        }
+        
+        showLoading();
+        String url = isFirstLaunch ? YOUTUBE_SIGNIN_URL :
+                     (shouldUseMobileVersion() ? YOUTUBE_MOBILE_URL : YOUTUBE_URL);
+        
+        // Ensure WebView operations are on main thread
+        mainHandler.post(() -> {
+            if (binding != null && binding.webview != null) {
+                binding.webview.loadUrl(url);
+            }
+        });
+    }
+    
+    private boolean shouldUseMobileVersion() {
+        return getResources().getConfiguration().smallestScreenWidthDp < 600;
+    }
+    
+    private class YouTubeWebViewClient extends WebViewClient {
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
-            try {
-                super.onPageStarted(view, url, favicon);
-                handlePageStarted(url);
-            } catch (Exception e) {
-                Log.e(TAG, "Error in onPageStarted", e);
+            super.onPageStarted(view, url, favicon);
+            isPageLoaded = false;
+            showLoading();
+            
+            if (url != null && url.contains("youtube.com") && !url.contains("accounts.google.com")) {
+                markFirstLaunchCompleted();
             }
         }
         
         @Override
         public void onPageFinished(WebView view, String url) {
-            try {
-                super.onPageFinished(view, url);
-                handlePageFinished(view, url);
-            } catch (Exception e) {
-                Log.e(TAG, "Error in onPageFinished", e);
-            }
+            super.onPageFinished(view, url);
+            isPageLoaded = true;
+            hideLoading();
         }
         
         @Override
         public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-            try {
-                super.onReceivedError(view, request, error);
-                
-                if (request != null && request.isForMainFrame()) {
-                    handlePageError(error);
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error in onReceivedError", e);
-            }
-        }
-        
-        /**
-         * Handles page start events
-         */
-        private void handlePageStarted(String url) {
-            isPageLoaded.set(false);
-            updateUIState(UIState.LOADING);
-            
-            Log.d(TAG, "Page loading started: " + url);
-            
-            // Update user state for YouTube URLs
-            if (url != null && url.contains("youtube.com") && !url.contains("accounts.google.com")) {
-                markFirstLaunchCompleted();
-                markUserSignedIn();
-            }
-        }
-        
-        /**
-         * Handles page finish events
-         */
-        private void handlePageFinished(WebView view, String url) {
-            isPageLoaded.set(true);
-            updateUIState(UIState.SUCCESS);
-            retryCount = 0;
-            
-            // Inject custom JavaScript
-            injectCustomJavaScript(view);
-            
-            Log.d(TAG, "Page loading finished: " + url);
-        }
-        
-        /**
-         * Handles page errors
-         */
-        private void handlePageError(WebResourceError error) {
-            isPageLoaded.set(false);
-            updateUIState(UIState.ERROR);
-            handleWebViewError(error);
-        }
-        
-        /**
-         * Injects custom JavaScript for enhanced functionality
-         */
-        private void injectCustomJavaScript(WebView view) {
-            try {
-                if (view != null) {
-                    String customScript = buildCustomJavaScript();
-                    
-                    view.evaluateJavascript(customScript, result -> {
-                        Log.d(TAG, "Custom JavaScript injected successfully");
-                    });
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error injecting JavaScript", e);
-            }
-        }
-        
-        /**
-         * Builds custom JavaScript code
-         */
-        private String buildCustomJavaScript() {
-            return "javascript:(function() {" +
-                   "  try {" +
-                   "    document.body.style.userSelect = 'none';" +
-                   "    document.body.style.webkitUserSelect = 'none';" +
-                   "    console.log('HD Streamz TV - Enhanced script injected');" +
-                   "  } catch(e) { " +
-                   "    console.error('Script injection failed:', e); " +
-                   "  }" +
-                   "})();";
-        }
-        
-        /**
-         * Handles WebView errors with appropriate responses
-         */
-        private void handleWebViewError(WebResourceError error) {
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && error != null) {
-                    int errorCode = error.getErrorCode();
-                    
-                    switch (errorCode) {
-                        case ERROR_HOST_LOOKUP:
-                        case ERROR_CONNECT:
-                        case ERROR_TIMEOUT:
-                            updateUIState(UIState.NETWORK_ERROR);
-                            break;
-                        case ERROR_FILE_NOT_FOUND:
-                            showSafeToast("YouTube সার্ভারে সমস্যা হয়েছে। কিছুক্ষণ পর চেষ্টা করুন");
-                            break;
-                        default:
-                            showSafeToast("পেজ লোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন");
-                            break;
-                    }
-                } else {
-                    showSafeToast("পেজ লোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন");
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error handling WebView error", e);
+            super.onReceivedError(view, request, error);
+            if (request != null && request.isForMainFrame()) {
+                showError();
             }
         }
     }
-
-    // ===============================
-    // WEBCHROME CLIENT IMPLEMENTATION
-    // ===============================
-
-    /**
-     * Custom WebChromeClient for enhanced YouTube experience
-     */
+    
     private class YouTubeWebChromeClient extends WebChromeClient {
-        
         @Override
         public void onProgressChanged(WebView view, int newProgress) {
-            try {
-                super.onProgressChanged(view, newProgress);
-                updateProgressBar(newProgress);
-            } catch (Exception e) {
-                Log.e(TAG, "Error in onProgressChanged", e);
-            }
-        }
-        
-        @Override
-        public void onReceivedTitle(WebView view, String title) {
-            try {
-                super.onReceivedTitle(view, title);
-                handleTitleReceived(title);
-            } catch (Exception e) {
-                Log.e(TAG, "Error in onReceivedTitle", e);
-            }
-        }
-        
-        @Override
-        public boolean onConsoleMessage(android.webkit.ConsoleMessage consoleMessage) {
-            try {
-                if (consoleMessage != null) {
-                    Log.d(TAG, "WebView Console [" + consoleMessage.messageLevel() + "]: " +
-                           consoleMessage.message() + " -- From line " +
-                           consoleMessage.lineNumber() + " of " + consoleMessage.sourceId());
+            super.onProgressChanged(view, newProgress);
+            if (binding != null && binding.progressBar != null) {
+                if (newProgress == 100) {
+                    binding.progressBar.setVisibility(View.GONE);
+                } else {
+                    binding.progressBar.setVisibility(View.VISIBLE);
+                    binding.progressBar.setProgress(newProgress);
                 }
-                return true;
-            } catch (Exception e) {
-                Log.e(TAG, "Error in onConsoleMessage", e);
-                return true;
             }
         }
         
         @Override
         public void onPermissionRequest(android.webkit.PermissionRequest request) {
-            try {
-                handlePermissionRequest(request);
-            } catch (Exception e) {
-                Log.e(TAG, "Error in onPermissionRequest", e);
-            }
-        }
-        
-        @Override
-        public void onShowCustomView(View view, CustomViewCallback callback) {
-            try {
-                super.onShowCustomView(view, callback);
-                Log.d(TAG, "Entering fullscreen mode");
-            } catch (Exception e) {
-                Log.e(TAG, "Error in onShowCustomView", e);
-            }
-        }
-        
-        @Override
-        public void onHideCustomView() {
-            try {
-                super.onHideCustomView();
-                Log.d(TAG, "Exiting fullscreen mode");
-            } catch (Exception e) {
-                Log.e(TAG, "Error in onHideCustomView", e);
-            }
-        }
-        
-        /**
-         * Updates progress bar based on loading progress using View Binding
-         */
-        private void updateProgressBar(int progress) {
-            if (binding != null && binding.progressBar != null) {
-                if (progress == 100) {
-                    binding.progressBar.setVisibility(View.GONE);
-                } else {
-                    binding.progressBar.setVisibility(View.VISIBLE);
-                    binding.progressBar.setProgress(progress);
-                }
-            }
-        }
-        
-        /**
-         * Handles received page title
-         */
-        private void handleTitleReceived(String title) {
-            Log.d(TAG, "Page title: " + title);
-            
-            if (binding != null && binding.errorTitle != null && title != null) {
-                if (title.contains("Error") || title.contains("404")) {
-                    binding.errorTitle.setText("পেজ পাওয়া যায়নি");
-                    if (binding.errorMessage != null) {
-                        binding.errorMessage.setText("অনুরোধকৃত পেজটি খুঁজে পাওয়া যায়নি");
-                    }
-                }
-            }
-        }
-        
-        /**
-         * Handles permission requests
-         */
-        private void handlePermissionRequest(android.webkit.PermissionRequest request) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && request != null) {
                 String[] permissions = request.getResources();
                 if (permissions != null) {
@@ -667,899 +258,293 @@ public class YouTubeFragment extends Fragment {
                         if (permission.equals(android.webkit.PermissionRequest.RESOURCE_VIDEO_CAPTURE) ||
                             permission.equals(android.webkit.PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
                             request.grant(new String[]{permission});
-                            Log.d(TAG, "Granted permission: " + permission);
                             return;
                         }
                     }
                 }
                 request.deny();
-                Log.d(TAG, "Denied permission request");
             }
         }
     }
-
-    // ===============================
-    // NETWORK MANAGEMENT
-    // ===============================
-
-    /**
-     * Sets up comprehensive network monitoring
-     */
-    private void setupNetworkMonitoring() {
-        try {
-            Context context = getContext();
-            if (context != null) {
-                connectivityManager = (ConnectivityManager)
-                    context.getSystemService(Context.CONNECTIVITY_SERVICE);
-                
-                isNetworkAvailable.set(checkNetworkAvailability());
-                createNetworkCallback();
-                
-                Log.d(TAG, "Network monitoring configured successfully");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error setting up network monitoring", e);
-        }
-    }
-
-    /**
-     * Creates network callback for monitoring connectivity changes
-     */
+    
     private void createNetworkCallback() {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                networkCallback = new ConnectivityManager.NetworkCallback() {
-                    @Override
-                    public void onAvailable(@NonNull Network network) {
-                        handleNetworkAvailable();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            networkCallback = new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(@NonNull Network network) {
+                    isNetworkAvailable = true;
+                    if (isFragmentActive && getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            hideNetworkError();
+                            if (!isPageLoaded) {
+                                loadYouTube();
+                            }
+                        });
                     }
-                    
-                    @Override
-                    public void onLost(@NonNull Network network) {
-                        handleNetworkLost();
-                    }
-                };
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error creating network callback", e);
-        }
-    }
-
-    /**
-     * Handles network becoming available
-     */
-    private void handleNetworkAvailable() {
-        isNetworkAvailable.set(true);
-        if (isFragmentActive.get() && getActivity() != null) {
-            getActivity().runOnUiThread(() -> {
-                try {
-                    hideNetworkError();
-                    if (!isPageLoaded.get() && !isLoading.get() && isInitialized.get()) {
-                        performInitialLoad();
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "Error in network available callback", e);
                 }
-            });
-        }
-    }
-
-    /**
-     * Handles network being lost
-     */
-    private void handleNetworkLost() {
-        isNetworkAvailable.set(false);
-        if (isFragmentActive.get() && getActivity() != null) {
-            getActivity().runOnUiThread(() -> {
-                try {
-                    showNetworkError();
-                } catch (Exception e) {
-                    Log.e(TAG, "Error in network lost callback", e);
+                
+                @Override
+                public void onLost(@NonNull Network network) {
+                    isNetworkAvailable = false;
+                    // Uncomment if you want to show network error immediately
+                    // if (isFragmentActive && getActivity() != null) {
+                    //     requireActivity().runOnUiThread(this::showNetworkError);
+                    // }
                 }
-            });
+            };
         }
     }
-
-    /**
-     * Registers network callback
-     */
-    private void registerNetworkCallback() {
-        try {
-            if (connectivityManager != null && networkCallback != null &&
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                NetworkRequest.Builder builder = new NetworkRequest.Builder();
-                connectivityManager.registerNetworkCallback(builder.build(), networkCallback);
-                Log.d(TAG, "Network callback registered");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to register network callback", e);
-        }
-    }
-
-    /**
-     * Unregisters network callback
-     */
-    private void unregisterNetworkCallback() {
-        try {
-            if (connectivityManager != null && networkCallback != null &&
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                connectivityManager.unregisterNetworkCallback(networkCallback);
-                Log.d(TAG, "Network callback unregistered");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to unregister network callback", e);
-        }
-    }
-
-    /**
-     * Checks current network availability
-     */
+    
     private boolean checkNetworkAvailability() {
-        try {
-            if (connectivityManager == null) return false;
-            
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                return checkNetworkAvailabilityModern();
-            } else {
-                return checkNetworkAvailabilityLegacy();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error checking network availability", e);
-            return false;
-        }
-    }
-
-    /**
-     * Checks network availability for modern Android versions
-     */
-    private boolean checkNetworkAvailabilityModern() {
+        if (connectivityManager == null) return false;
+        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             Network activeNetwork = connectivityManager.getActiveNetwork();
             if (activeNetwork == null) return false;
             
             NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(activeNetwork);
-            return capabilities != null &&
-                   (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
+            return capabilities != null && (
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+            );
+        } else {
+            android.net.NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+            return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+        }
+    }
+    
+    private void registerNetworkCallback() {
+        if (connectivityManager != null && networkCallback != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            NetworkRequest.Builder builder = new NetworkRequest.Builder();
+            connectivityManager.registerNetworkCallback(builder.build(), networkCallback);
+        }
+    }
+    
+    private void unregisterNetworkCallback() {
+        if (connectivityManager != null && networkCallback != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            try {
+                connectivityManager.unregisterNetworkCallback(networkCallback);
+            } catch (Exception e) {
+                Log.w(TAG, "Error unregistering network callback", e);
+            }
+        }
+    }
+    
+    private void handleRefresh() {
+        if (isNetworkAvailable) {
+            loadYouTube();
+        } else {
+            if (binding != null && binding.swipeRefresh != null) {
+                binding.swipeRefresh.setRefreshing(false);
+            }
+            showNetworkError();
+        }
+    }
+    
+    private boolean handleBackPress() {
+        if (binding != null && binding.webview != null && binding.webview.canGoBack()) {
+            binding.webview.goBack();
+            return true;
         }
         return false;
     }
-
-    /**
-     * Checks network availability for legacy Android versions
-     */
-    private boolean checkNetworkAvailabilityLegacy() {
-        android.net.NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
-    }
-
-    // ===============================
-    // USER INTERFACE SETUP
-    // ===============================
-
-    /**
-     * Sets up all user interface components using View Binding
-     */
-    private void setupUserInterface() {
-        setupSwipeRefresh();
-        setupBackPressHandling();
-    }
-
-    /**
-     * Configures swipe refresh functionality using View Binding
-     */
-    private void setupSwipeRefresh() {
-        try {
-            if (binding != null && binding.swipeRefresh != null) {
-                binding.swipeRefresh.setColorSchemeResources(
-                    android.R.color.holo_blue_bright,
-                    android.R.color.holo_green_light,
-                    android.R.color.holo_orange_light,
-                    android.R.color.holo_red_light
-                );
-                
-                binding.swipeRefresh.setDistanceToTriggerSync(SWIPE_REFRESH_DISTANCE);
-                binding.swipeRefresh.setOnRefreshListener(this::handleRefresh);
-                
-                Log.d(TAG, "SwipeRefresh configured successfully");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error setting up SwipeRefresh", e);
-        }
-    }
-
-    /**
-     * Sets up back press handling for WebView navigation using View Binding
-     */
-    private void setupBackPressHandling() {
-        try {
-            setupWebViewBackPress();
-            setupRootViewBackPress();
-            
-            Log.d(TAG, "Back press handling configured successfully");
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Error setting up back press handling", e);
-        }
-    }
-
-    /**
-     * Sets up WebView back press handling using View Binding
-     */
-    private void setupWebViewBackPress() {
-        if (binding != null && binding.webview != null) {
-            binding.webview.setOnKeyListener((v, keyCode, event) -> {
-                if (keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
-                    return handleWebViewBackPress();
-                }
-                return false;
-            });
-            
-            binding.webview.requestFocus();
-        }
-    }
-
-    /**
-     * Sets up root view back press handling using View Binding
-     */
-    private void setupRootViewBackPress() {
-        if (binding != null && binding.getRoot() != null) {
-            binding.getRoot().setFocusableInTouchMode(true);
-            binding.getRoot().requestFocus();
-            binding.getRoot().setOnKeyListener((v, keyCode, event) -> {
-                if (keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
-                    return handleWebViewBackPress();
-                }
-                return false;
-            });
-        }
-    }
-
-    // ===============================
-    // EVENT HANDLERS SETUP
-    // ===============================
-
-    /**
-     * Sets up all event handlers using View Binding
-     */
-    private void setupEventHandlers() {
-        setupErrorHandlers();
-        setupDownloadHandler();
-    }
-
-    /**
-     * Sets up error handling event listeners using View Binding
-     */
-    private void setupErrorHandlers() {
-        try {
-            if (binding != null) {
-                if (binding.retryButton != null) {
-                    binding.retryButton.setOnClickListener(v -> handleRetry());
-                }
-                
-                if (binding.retryErrorButton != null) {
-                    binding.retryErrorButton.setOnClickListener(v -> handleRetry());
-                }
-            }
-            
-            Log.d(TAG, "Error handlers configured successfully");
-        } catch (Exception e) {
-            Log.e(TAG, "Error setting up error handlers", e);
-        }
-    }
-
-    /**
-     * Sets up download button handler using View Binding
-     */
-    private void setupDownloadHandler() {
-        try {
-            if (binding != null && binding.settingsButton != null) {
-                binding.settingsButton.setOnClickListener(v -> handleDownloadClick());
-            }
-            
-            Log.d(TAG, "Download handler configured successfully");
-        } catch (Exception e) {
-            Log.e(TAG, "Error setting up download handler", e);
-        }
-    }
-
-    // ===============================
-    // EVENT HANDLING METHODS
-    // ===============================
-
-    /**
-     * Handles refresh action using View Binding
-     */
-    private void handleRefresh() {
-        try {
-            if (isNetworkAvailable.get()) {
-                retryCount = 0;
-                reloadYouTube();
-            } else {
-                if (binding != null && binding.swipeRefresh != null) {
-                    binding.swipeRefresh.setRefreshing(false);
-                }
-                showNetworkError();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error handling refresh", e);
-        }
-    }
-
-    /**
-     * Handles retry action
-     */
-    private void handleRetry() {
-        try {
-            if (retryCount < MAX_RETRY_COUNT) {
-                retryCount++;
-                hideError();
-                performInitialLoad();
-            } else {
-                showSafeToast("সর্বোচ্চ চেষ্টার সীমা পৌঁছেছে। পরে আবার চেষ্টা করুন");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error handling retry", e);
-        }
-    }
-
     
-
-    /**
-     * Handles WebView back press navigation using View Binding
-     */
-    private boolean handleWebViewBackPress() {
-        try {
-            if (binding != null && binding.webview != null && binding.webview.canGoBack()) {
-                binding.webview.goBack();
-                Log.d(TAG, "Navigating back in WebView history");
-                showSafeToast("পূর্ববর্তী পেজে ফিরে যাচ্ছে");
-                return true;
-            } else {
-                showSafeToast("আর পিছনে যাওয়ার মতো পেজ নেই");
-                Log.d(TAG, "No back history available in WebView");
-                return true;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error handling back press", e);
-            return true;
-        }
-    }
-
-    /**
-     * Public method for handling back press from parent activity
-     */
     public boolean onBackPressed() {
-        return handleWebViewBackPress();
+        return handleBackPress();
     }
-
-    // ===============================
-    // UI STATE MANAGEMENT
-    // ===============================
-
-    /**
-     * UI State enumeration
-     */
-    private enum UIState {
-        IDLE, LOADING, ERROR, NETWORK_ERROR, SUCCESS
+    
+    private void handleStreamExtraction() {
+        if (!isFragmentActive || getContext() == null || binding == null || binding.webview == null) {
+            Log.w(TAG, "Fragment not active or context/binding is null");
+            return;
+        }
+        
+        String url = binding.webview.getUrl();
+        
+        if (url == null || url.trim().isEmpty()) {
+            showToast("Please navigate to a YouTube video");
+            return;
+        }
+        
+        // Show loading state
+        showLoading();
+        
+        int serviceId = ServiceList.YouTube.getServiceId();
+        
+        Disposable disposable = ExtractorHelper.getStreamInfo(serviceId, url, false)
+            .subscribeOn(Schedulers.io()) // Background thread for network/extraction
+            .observeOn(AndroidSchedulers.mainThread()) // Main thread for UI updates
+            .subscribe(
+                streamInfo -> {
+                    // Hide loading state
+                    hideLoading();
+                    
+                    // Double-check fragment is still active and context exists
+                    if (!isFragmentActive || getContext() == null) {
+                        Log.w(TAG, "Fragment no longer active, ignoring stream info result");
+                        return;
+                    }
+                    
+                    if (streamInfo == null) {
+                        showToast("Stream info is null. This video might not be supported.");
+                        return;
+                    }
+                    
+                    if (streamInfo.getVideoStreams() == null || streamInfo.getVideoStreams().isEmpty()) {
+                        showToast("No video streams found. This video might not be supported.");
+                        return;
+                    }
+                    
+                    try {
+                        String videoUrl = streamInfo.getVideoStreams().get(0).getUrl();
+                        String videoTitle = streamInfo.getName() != null ? streamInfo.getName() : "Unknown Title";
+                        
+                        if (videoUrl == null || videoUrl.trim().isEmpty()) {
+                            showToast("Invalid video URL extracted");
+                            return;
+                        }
+                        
+                        Context context = getContext();
+                        if (context != null) {
+                            Intent intent = new Intent(context, PlayerActivity.class);
+                            intent.putExtra("name", videoTitle);
+                            intent.putExtra("link", videoUrl);
+                            intent.putExtra("category", Template.YOUTUBE);
+                            context.startActivity(intent);
+                        }
+                        
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error launching player or accessing stream data", e);
+                        showToast("Error: Unable to play video. " + e.getLocalizedMessage());
+                    }
+                },
+                throwable -> {
+                    // Hide loading state
+                    hideLoading();
+                    
+                    Log.e(TAG, "Failed to extract stream info", throwable);
+                    
+                    if (isFragmentActive && getContext() != null) {
+                        String errorMessage = "Error: Unable to extract video info. ";
+                        if (throwable.getMessage() != null) {
+                            errorMessage += throwable.getMessage();
+                        } else {
+                            errorMessage += "Please ensure your app is updated or try a different video.";
+                        }
+                        showToast(errorMessage);
+                    }
+                }
+            );
+        
+        // Add to composite disposable for proper cleanup
+        compositeDisposable.add(disposable);
     }
-
-    /**
-     * Updates UI state with proper error handling using View Binding
-     */
-    private void updateUIState(UIState state) {
-        try {
-            if (!isFragmentActive.get() || !isInitialized.get() || binding == null) return;
-            
-            switch (state) {
-                case LOADING:
-                    showLoading();
-                    break;
-                case ERROR:
-                    showError();
-                    break;
-                case NETWORK_ERROR:
-                    showNetworkError();
-                    break;
-                case SUCCESS:
-                    showSuccess();
-                    break;
-                case IDLE:
-                default:
-                    showIdle();
-                    break;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error updating UI state", e);
+    
+    private void showToast(String message) {
+        Context context = getContext();
+        if (context != null && isFragmentActive) {
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show();
         }
     }
-
-    /**
-     * Shows loading state using View Binding
-     */
+    
     private void showLoading() {
         if (binding == null) return;
-        
-        isLoading.set(true);
         setViewVisibility(binding.progressBar, View.VISIBLE);
         setViewVisibility(binding.loadingIndicator, View.VISIBLE);
         setViewVisibility(binding.errorContainer, View.GONE);
     }
-
-    /**
-     * Shows success state
-     */
-    private void showSuccess() {
-        hideLoading();
-        hideError();
-        hideNetworkError();
-    }
-
-    /**
-     * Shows idle state
-     */
-    private void showIdle() {
-        hideLoading();
-        hideError();
-        hideNetworkError();
-    }
-
-    /**
-     * Hides loading indicators using View Binding
-     */
+    
     private void hideLoading() {
         if (binding == null) return;
-        
-        isLoading.set(false);
         setViewVisibility(binding.progressBar, View.GONE);
         setViewVisibility(binding.loadingIndicator, View.GONE);
-        
         if (binding.swipeRefresh != null) {
             binding.swipeRefresh.setRefreshing(false);
         }
     }
-
-    /**
-     * Shows error state using View Binding
-     */
+    
     private void showError() {
         if (binding == null) return;
-        
         setViewVisibility(binding.errorContainer, View.VISIBLE);
         setViewVisibility(binding.webview, View.GONE);
     }
-
-    /**
-     * Hides error state using View Binding
-     */
-    private void hideError() {
-        if (binding == null) return;
-        
-        setViewVisibility(binding.errorContainer, View.GONE);
-        setViewVisibility(binding.webview, View.VISIBLE);
-    }
-
-    /**
-     * Shows network error state using View Binding
-     */
+    
     private void showNetworkError() {
         if (binding == null) return;
-        
         setViewVisibility(binding.networkStatusContainer, View.VISIBLE);
         if (binding.networkStatusText != null) {
-            binding.networkStatusText.setText("ইন্টারনেট সংযোগ নেই");
+            binding.networkStatusText.setText("No internet connection");
         }
     }
-
-    /**
-     * Hides network error state using View Binding
-     */
+    
     private void hideNetworkError() {
         if (binding == null) return;
-        
         setViewVisibility(binding.networkStatusContainer, View.GONE);
     }
-
-    /**
-     * Safely sets view visibility
-     */
+    
     private void setViewVisibility(View view, int visibility) {
-        try {
-            if (view != null) {
-                view.setVisibility(visibility);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error setting view visibility", e);
+        if (view != null) {
+            view.setVisibility(visibility);
         }
     }
-
-    // ===============================
-    // YOUTUBE LOADING METHODS
-    // ===============================
-
-    /**
-     * Performs initial YouTube loading
-     */
-    private void performInitialLoad() {
-        try {
-            if (!canPerformLoad()) {
-                Log.d(TAG, "Cannot perform load - conditions not met");
-                return;
-            }
-            
-            if (!isNetworkAvailable.get()) {
-                updateUIState(UIState.NETWORK_ERROR);
-                return;
-            }
-            
-            updateUIState(UIState.LOADING);
-            
-            scheduleDelayedTask(() -> {
-                if (isFragmentActive.get() && isInitialized.get()) {
-                    loadYouTube();
-                }
-            }, LOAD_DELAY);
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Error performing initial load", e);
-        }
-    }
-
-    /**
-     * Checks if loading can be performed
-     */
-    private boolean canPerformLoad() {
-        return isFragmentActive.get() && isInitialized.get() && binding != null;
-    }
-
-    /**
-     * Loads YouTube with proper error handling and timeout using View Binding
-     */
-    private void loadYouTube() {
-        try {
-            if (!canLoadYouTube()) {
-                Log.w(TAG, "Cannot load YouTube - conditions not met");
-                return;
-            }
-            
-            String urlToLoad = determineUrlToLoad();
-            binding.webview.loadUrl(urlToLoad);
-            isPageLoaded.set(false);
-            
-            Log.d(TAG, "Loading YouTube: " + urlToLoad);
-            
-            // Set loading timeout
-            scheduleLoadingTimeout();
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Error loading YouTube", e);
-            updateUIState(UIState.ERROR);
-        }
-    }
-
-    /**
-     * Checks if YouTube can be loaded using View Binding
-     */
-    private boolean canLoadYouTube() {
-        return binding != null && binding.webview != null && 
-               isFragmentActive.get() && isInitialized.get();
-    }
-
-    /**
-     * Schedules loading timeout
-     */
-    private void scheduleLoadingTimeout() {
-        scheduleDelayedTask(() -> {
-            if (isLoading.get() && !isPageLoaded.get() && isFragmentActive.get()) {
-                Log.w(TAG, "Loading timeout reached");
-                updateUIState(UIState.ERROR);
-            }
-        }, PAGE_LOAD_TIMEOUT);
-    }
-
-    /**
-     * Determines which URL to load based on user state
-     */
-    private String determineUrlToLoad() {
-        try {
-            if (isFirstLaunch && !isUserSignedIn) {
-                Log.d(TAG, "First launch - showing sign-in page");
-                return YOUTUBE_SIGNIN_URL;
-            } else {
-                return shouldUseMobileVersion() ? YOUTUBE_MOBILE_URL : YOUTUBE_URL;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error determining URL", e);
-            return YOUTUBE_URL;
-        }
-    }
-
-    /**
-     * Reloads YouTube page using View Binding
-     */
-    private void reloadYouTube() {
-        try {
-            if (binding != null && binding.webview != null && isFragmentActive.get()) {
-                binding.webview.reload();
-                Log.d(TAG, "Reloading YouTube");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error reloading YouTube", e);
-        }
-    }
-
-    /**
-     * Determines if mobile version should be used
-     */
-    private boolean shouldUseMobileVersion() {
-        try {
-            return getResources().getConfiguration().smallestScreenWidthDp < 600;
-        } catch (Exception e) {
-            Log.e(TAG, "Error checking mobile version", e);
-            return true;
-        }
-    }
-
-    // ===============================
-    // PREFERENCE MANAGEMENT
-    // ===============================
-
-    /**
-     * Marks first launch as completed
-     */
+    
     private void markFirstLaunchCompleted() {
-        try {
-            if (isFirstLaunch && sharedPreferences != null) {
-                isFirstLaunch = false;
-                sharedPreferences.edit()
-                    .putBoolean(KEY_FIRST_LAUNCH, false)
-                    .apply();
-                Log.d(TAG, "First launch completed");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error marking first launch completed", e);
+        if (isFirstLaunch && sharedPreferences != null) {
+            isFirstLaunch = false;
+            sharedPreferences.edit().putBoolean(KEY_FIRST_LAUNCH, false).apply();
         }
     }
-
-    /**
-     * Marks user as signed in
-     */
-    private void markUserSignedIn() {
-        try {
-            if (!isUserSignedIn && sharedPreferences != null) {
-                isUserSignedIn = true;
-                sharedPreferences.edit()
-                    .putBoolean(KEY_USER_SIGNED_IN, true)
-                    .apply();
-                Log.d(TAG, "User signed in");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error marking user signed in", e);
-        }
-    }
-
-    // ===============================
-    // WEBVIEW LIFECYCLE MANAGEMENT
-    // ===============================
-
-    /**
-     * Resumes WebView operations using View Binding
-     */
-    private void resumeWebView() {
-        try {
-            if (binding != null && binding.webview != null) {
-                binding.webview.onResume();
-                binding.webview.resumeTimers();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error resuming WebView", e);
-        }
-    }
-
-    /**
-     * Pauses WebView operations using View Binding
-     */
-    private void pauseWebView() {
-        try {
-            if (binding != null && binding.webview != null) {
-                binding.webview.onPause();
-                binding.webview.pauseTimers();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error pausing WebView", e);
-        }
-    }
-
-    // ===============================
-    // UTILITY METHODS
-    // ===============================
-
-    /**
-     * Sets up cookie manager for WebView using View Binding
-     */
+    
     private void setupCookieManager() {
-        try {
-            CookieManager cookieManager = CookieManager.getInstance();
-            if (cookieManager != null && binding != null && binding.webview != null) {
-                cookieManager.setAcceptCookie(true);
-                cookieManager.setAcceptThirdPartyCookies(binding.webview, true);
-                
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    cookieManager.flush();
-                }
-                
-                Log.d(TAG, "Cookie manager configured successfully");
+        CookieManager cookieManager = CookieManager.getInstance();
+        if (cookieManager != null && binding != null && binding.webview != null) {
+            cookieManager.setAcceptCookie(true);
+            cookieManager.setAcceptThirdPartyCookies(binding.webview, true);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                cookieManager.flush();
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Error setting up cookie manager", e);
         }
     }
-
-    /**
-     * Schedules a delayed task safely
-     */
-    private void scheduleDelayedTask(Runnable task, long delay) {
-        try {
-            if (mainHandler != null && task != null) {
-                mainHandler.postDelayed(task, delay);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error scheduling delayed task", e);
+    
+    private void resumeWebView() {
+        if (binding != null && binding.webview != null) {
+            binding.webview.onResume();
+            binding.webview.resumeTimers();
         }
     }
-
-    /**
-     * Shows toast message safely
-     */
-    private void showSafeToast(String message) {
-        try {
-            Context context = getContext();
-            if (context != null && isFragmentActive.get() && message != null) {
-                Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error showing toast", e);
+    
+    private void pauseWebView() {
+        if (binding != null && binding.webview != null) {
+            binding.webview.onPause();
+            binding.webview.pauseTimers();
         }
     }
-
-    // ===============================
-    // CLEANUP METHODS
-    // ===============================
-
-    /**
-     * Performs comprehensive cleanup
-     */
-    private void performCleanup() {
+    
+    private void cleanup() {
         unregisterNetworkCallback();
-        cleanupWebView();
-        cleanupHandlers();
-    }
-
-    /**
-     * Cleans up WebView resources using View Binding
-     */
-    private void cleanupWebView() {
-        try {
-            if (binding != null && binding.webview != null) {
-                binding.webview.pauseTimers();
-                binding.webview.clearHistory();
-                binding.webview.clearCache(true);
-                binding.webview.clearFormData();
-                binding.webview.loadUrl("about:blank");
-                binding.webview.destroy();
-                Log.d(TAG, "WebView cleaned up successfully");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error cleaning up WebView", e);
+        
+        // Dispose all RxJava subscriptions
+        if (!compositeDisposable.isDisposed()) {
+            compositeDisposable.clear();
         }
-    }
-
-    /**
-     * Cleans up handlers and removes callbacks
-     */
-    private void cleanupHandlers() {
-        try {
-            if (mainHandler != null) {
-                mainHandler.removeCallbacksAndMessages(null);
-                mainHandler = null;
-            }
+        
+        if (binding != null && binding.webview != null) {
+            binding.webview.pauseTimers();
+            binding.webview.clearHistory();
+            binding.webview.clearCache(true);
+            binding.webview.loadUrl("about:blank");
             
-            Log.d(TAG, "Handlers cleaned up successfully");
-        } catch (Exception e) {
-            Log.e(TAG, "Error cleaning up handlers", e);
+            // Destroy WebView on main thread
+            mainHandler.post(() -> {
+                if (binding != null && binding.webview != null) {
+                    binding.webview.destroy();
+                }
+            });
+        }
+        
+        if (mainHandler != null) {
+            mainHandler.removeCallbacksAndMessages(null);
         }
     }
-
-    /**
- * Handles the download/play button click.
- * It sanitizes complex YouTube URLs (e.g., from playlists or radio), extracts the
- * appropriate stream link(s), and launches the PlayerActivity with the necessary data.
- */
-private void handleDownloadClick() {
-    // 1. Prevent multiple rapid clicks while an operation is already in progress.
-    if (linkFetcher.isBusy()) {
-        Toast.makeText(getContext(), "Extraction already in progress...", Toast.LENGTH_SHORT).show();
-        return;
-    }
-
-    // 2. Get the original, potentially complex URL from the WebView.
-    String originalUrl = binding.webview.getUrl();
-
-    // 3. Extract *only* the essential video ID from the original URL.
-    // This is the key step to solve the "URL not accepted" error for playlist links.
-    String videoId = YouTubeStreamLinkFetcher.extractVideoId(originalUrl);
-
-    // 4. Validate that a video ID was successfully extracted.
-    if (videoId == null) {
-        Log.e(TAG, "Could not extract a valid YouTube video ID from URL: " + originalUrl);
-        Toast.makeText(getContext(), "Not a valid YouTube video page.", Toast.LENGTH_SHORT).show();
-        return;
-    }
-
-    // 5. Construct a clean, canonical URL that the extractor is guaranteed to accept.
-    String canonicalUrl = "https://www.youtube.com/watch?v=" + videoId;
-
-    // 6. Provide immediate user feedback and log the start of the operation.
-    Toast.makeText(getContext(), "Fetching video streams...", Toast.LENGTH_SHORT).show();
-    Log.d(TAG, "Sanitized URL for extraction: " + canonicalUrl);
-
-    // 7. Call the extractor with the CLEAN, CANONICAL URL.
-    linkFetcher.extractStreamLink(canonicalUrl, YouTubeStreamLinkFetcher.VideoQuality.BEST, new YouTubeStreamLinkFetcher.OnStreamLinkListener() {
-
-        @Override
-        public void onStreamLinkExtracted(@NonNull YouTubeStreamLinkFetcher.StreamData streamData) {
-            // Check if a valid video URL was actually found.
-            if (streamData.videoUrl == null || streamData.videoUrl.isEmpty()) {
-                Log.e(TAG, "Extraction succeeded but no playable video URL was found.");
-                Toast.makeText(getContext(), "Could not find a playable video stream.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            Log.d(TAG, "Stream extracted successfully. Quality: " + streamData.videoQuality + ", Is DASH: " + streamData.isDashStream);
-
-            try {
-                // Check if fragment is still attached to an activity
-                if (getContext() == null) {
-                    return;
-                }
-
-                // Prepare the intent to launch the player.
-                Intent intent = new Intent(getContext(), PlayerActivity.class);
-
-                // Use the real title from the extracted data for a better user experience.
-                intent.putExtra("name", streamData.title);
-                intent.putExtra("link", streamData.videoUrl);
-                intent.putExtra("category", Template.YOUTUBE);
-
-                // CRITICAL: Handle DASH streams by passing the separate audio URL.
-                // Your PlayerActivity must be updated to check for and use this "audioLink" extra.
-                if (streamData.isDashStream && streamData.audioUrl != null) {
-                    Log.d(TAG, "Passing separate DASH streams to player. Audio: " + streamData.audioUrl);
-                    intent.putExtra("audioLink", streamData.audioUrl);
-                }
-
-                getContext().startActivity(intent);
-                Log.d(TAG, "PlayerActivity launched.");
-
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to launch PlayerActivity", e);
-                if (getContext() != null) {
-                    Toast.makeText(getContext(), "Error launching video player.", Toast.LENGTH_SHORT).show();
-                }
-            }
-        }
-
-        @Override
-        public void onError(@NonNull String error, @NonNull Throwable throwable) {
-            // Log the detailed error for debugging purposes.
-            Log.e(TAG, "YouTube URL extraction failed: " + error, throwable);
-
-            // Show a clear, user-friendly error message, checking for context first.
-            if (getContext() != null) {
-                Toast.makeText(getContext(), "Error: " + error, Toast.LENGTH_LONG).show();
-            }
-        }
-    });
-}
 }

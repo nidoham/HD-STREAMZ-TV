@@ -1,5 +1,3 @@
-package com.nidoham.hdstreamztv.utils;
-
 /*
  * Copyright 2017 Mauricio Colli <mauriciocolli@outlook.com>
  * InfoCache.java is part of NewPipe
@@ -18,6 +16,8 @@ package com.nidoham.hdstreamztv.utils;
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
+package org.schabi.newpipe.util;
 
 import android.util.Log;
 
@@ -144,7 +144,7 @@ public final class InfoCache {
     }
 
     public void trimCache() {
-        if (DEBUG) {
+        if (App.DEBUG) {
             Log.d(TAG, "trimCache() called");
         }
         synchronized (LRU_CACHE) {

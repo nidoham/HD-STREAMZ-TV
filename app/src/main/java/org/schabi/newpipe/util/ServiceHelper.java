@@ -1,4 +1,4 @@
-package com.nidoham.hdstreamztv.utils;
+package org.schabi.newpipe.util;
 
 import static org.schabi.newpipe.extractor.ServiceList.SoundCloud;
 
@@ -16,7 +16,6 @@ import com.grack.nanojson.JsonParser;
 import com.grack.nanojson.JsonParserException;
 
 import com.nidoham.hdstreamztv.R;
-
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.StreamingService;

@@ -23,9 +23,9 @@ import androidx.core.app.NavUtils;
 import androidx.preference.PreferenceManager;
 
 import com.nidoham.hdstreamztv.App;
-import com.nidoham.hdstreamztv.DownloaderImpl;
 import com.nidoham.hdstreamztv.MainActivity;
 import com.nidoham.hdstreamztv.databinding.ActivityRecaptchaBinding;
+import org.schabi.newpipe.DownloaderImpl;
 import org.schabi.newpipe.extractor.utils.Utils;
 
 /*

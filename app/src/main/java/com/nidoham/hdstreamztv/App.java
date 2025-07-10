@@ -8,8 +8,8 @@ import android.util.Log;
 import androidx.preference.PreferenceManager;
 
 import com.nidoham.hdstreamztv.error.ReCaptchaActivity;
-import com.nidoham.hdstreamztv.DownloaderImpl;
 
+import org.schabi.newpipe.DownloaderImpl;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.downloader.Downloader;
 import org.schabi.newpipe.extractor.localization.ContentCountry;
