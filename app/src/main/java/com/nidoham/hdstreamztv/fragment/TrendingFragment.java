@@ -20,9 +20,11 @@ import com.nidoham.hdstreamztv.adapter.VideoAdapter;
 import com.nidoham.hdstreamztv.databinding.FragmentTrendingBinding;
 import com.nidoham.hdstreamztv.model.VideoItem;
 import com.nidoham.hdstreamztv.util.NetworkUtils;
+import com.nidoham.hdstreamztv.App;
 
 import org.schabi.newpipe.extractor.Image;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,10 +52,15 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         try {
+            // Check if NewPipe is initialized by the App class
+            if (!App.getInstance().isNewPipeInitialized()) {
+                App.getInstance().reinitializeNewPipe();
+            }
             // Initialize TrendingVideosExecutor with the listener (this Fragment)
             executor = new TrendingVideosExecutor(requireContext(), this);
         } catch (Exception e) {
             Log.e(TAG, "Failed to initialize executor", e);
+            showError("Failed to initialize video service");
         }
     }
 
