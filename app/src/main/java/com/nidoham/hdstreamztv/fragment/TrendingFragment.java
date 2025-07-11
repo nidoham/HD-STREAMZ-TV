@@ -1,6 +1,7 @@
 package com.nidoham.hdstreamztv.fragment;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -14,17 +15,28 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import bd.nidoham.intent.IntentKeys;
 import bd.nidoham.youtube.home.TrendingVideosExecutor;
+import com.nidoham.hdstreamztv.App;
+import com.nidoham.hdstreamztv.PlayerActivity;
 import com.nidoham.hdstreamztv.R;
 import com.nidoham.hdstreamztv.adapter.VideoAdapter;
 import com.nidoham.hdstreamztv.databinding.FragmentTrendingBinding;
 import com.nidoham.hdstreamztv.model.VideoItem;
 import com.nidoham.hdstreamztv.util.NetworkUtils;
-import com.nidoham.hdstreamztv.App;
 
 import org.schabi.newpipe.extractor.Image;
+import org.schabi.newpipe.extractor.ServiceList;
+import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
+import org.schabi.newpipe.extractor.stream.VideoStream;
 
+import org.schabi.newpipe.util.ExtractorHelper;
+
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +53,7 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
 
     // Data & Logic Components
     private TrendingVideosExecutor executor;
+    private final CompositeDisposable compositeDisposable = new CompositeDisposable();
 
     // State Management
     private final ArrayList<VideoItem> videoList = new ArrayList<>();
@@ -92,6 +105,7 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
         if (executor != null) {
             executor.dispose(); // Clean up executor subscriptions
         }
+        compositeDisposable.clear(); // Clean up RxJava subscriptions
         // Nullify the binding object to prevent memory leaks
         binding = null;
     }
@@ -174,7 +188,7 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
         binding.progressBar.setVisibility(View.GONE);
         binding.recyclerViewTrending.setVisibility(View.GONE);
         // Since no empty state container exists, show a Toast
-        Toast.makeText(getContext(), "No videos available", Toast.LENGTH_SHORT).show();
+        showToast("No videos available");
     }
 
     @Override
@@ -184,10 +198,10 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
         binding.progressBar.setVisibility(View.GONE);
         if (videoList.isEmpty()) {
             binding.recyclerViewTrending.setVisibility(View.GONE);
-            Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+            showToast(message, Toast.LENGTH_LONG);
         } else {
             binding.recyclerViewTrending.setVisibility(View.VISIBLE);
-            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+            showToast(message, Toast.LENGTH_SHORT);
         }
     }
 
@@ -234,9 +248,107 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
         return processedVideos;
     }
 
+    private void showToast(String message) {
+        showToast(message, Toast.LENGTH_SHORT);
+    }
+
+    private void showToast(String message, int duration) {
+        Context context = getContext();
+        if (context != null) {
+            Toast.makeText(context, message, duration).show();
+        }
+    }
+
+    // --- Video Item Click Handler ---
+
     @Override
     public void onVideoItemClick(@NonNull VideoItem videoItem) {
-        Toast.makeText(getContext(), "Opening: " + videoItem.getTitle(), Toast.LENGTH_SHORT).show();
-        // TODO: Implement navigation logic here
+        handleStreamExtraction(videoItem.getVideoUrl());
+    }
+
+    // --- Stream Extraction and Quality Selection ---
+
+    private void handleStreamExtraction(final String url) {
+        if (!isAdded() || getContext() == null) {
+            Log.w(TAG, "Fragment not active or context is null");
+            return;
+        }
+
+        if (url == null || url.trim().isEmpty()) {
+            showToast("Invalid video URL");
+            return;
+        }
+
+        Log.d(TAG, "Starting stream extraction for URL: " + url);
+
+        int serviceId = ServiceList.YouTube.getServiceId();
+
+        Disposable disposable = ExtractorHelper.getStreamInfo(serviceId, url, true)
+                .subscribeOn(Schedulers.io()) // Background thread for network/extraction
+                .observeOn(AndroidSchedulers.mainThread()) // Main thread for UI updates
+                .subscribe(
+                        streamInfo -> {
+                            if (!isAdded() || getContext() == null) {
+                                Log.w(TAG, "Fragment no longer active, ignoring stream info result");
+                                return;
+                            }
+
+                            if (streamInfo == null) {
+                                showToast("Stream info is null. This video might not be supported.");
+                                return;
+                            }
+
+                            List<VideoStream> videoStreams = streamInfo.getVideoStreams();
+                            if (videoStreams == null || videoStreams.isEmpty()) {
+                                showToast("No video streams available for this video.");
+                                return;
+                            }
+
+                            try {
+                                handleStreamInfoReceived(streamInfo);
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error processing stream data", e);
+                                showToast("Error processing video data: " + e.getMessage());
+                            }
+                        },
+                        throwable -> {
+                            Log.e(TAG, "Failed to extract stream info", throwable);
+                            if (isAdded() && getContext() != null) {
+                                String errorMessage = "Error: Unable to extract video info. ";
+                                if (throwable.getMessage() != null) {
+                                    errorMessage += throwable.getMessage();
+                                } else {
+                                    errorMessage += "Please ensure your app is updated or try a different video.";
+                                }
+                                showToast(errorMessage, Toast.LENGTH_LONG);
+                            }
+                        }
+                );
+
+        // Add to composite disposable for proper cleanup
+        compositeDisposable.add(disposable);
+    }
+
+    private void handleStreamInfoReceived(StreamInfo streamInfo) {
+        Context context = getContext();
+        if (context == null) return;
+
+        List<VideoStream> videoStreams = streamInfo.getVideoStreams();
+        // Select the first available video stream (or implement quality selection logic)
+        VideoStream selectedStream = videoStreams != null && !videoStreams.isEmpty() ? videoStreams.get(0) : null;
+        if (selectedStream == null) {
+            showToast("No playable video stream found.");
+            return;
+        }
+
+        String videoUrl = selectedStream.getUrl();
+        String videoTitle = streamInfo.getName() != null ? streamInfo.getName() : "Unknown Title";
+
+        Intent intent = new Intent(context, PlayerActivity.class);
+        intent.putExtra(IntentKeys.EXTRA_VIDEO_NAME, videoTitle); // Fixed: title, not URL
+        intent.putExtra(IntentKeys.EXTRA_VIDEO_URL, videoUrl); // Fixed: URL, not title
+        intent.putExtra(IntentKeys.EXTRA_VIDEO_CATEGORY, IntentKeys.EXTRA_KIOSK_YOUTUBE);
+        intent.putExtra(IntentKeys.EXTRA_VIDEO_QUALITY, selectedStream.getUrl()); // Use stream URL for quality
+        context.startActivity(intent);
     }
 }

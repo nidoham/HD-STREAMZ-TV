@@ -4,14 +4,29 @@
       "file": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/fragment/TrendingFragment.java",
       "selection": {
         "end": {
-          "column": 0,
-          "index": 8469,
-          "line": 230
+          "column": 18,
+          "index": 1153,
+          "line": 31
         },
         "start": {
-          "column": 0,
-          "index": 8469,
-          "line": 230
+          "column": 17,
+          "index": 1152,
+          "line": 31
+        }
+      }
+    },
+    {
+      "file": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/fragment/YouTubeFragment.java",
+      "selection": {
+        "end": {
+          "column": 62,
+          "index": 33261,
+          "line": 866
+        },
+        "start": {
+          "column": 62,
+          "index": 33261,
+          "line": 866
         }
       }
     },
@@ -19,14 +34,14 @@
       "file": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/App.java",
       "selection": {
         "end": {
-          "column": 1,
-          "index": 9028,
-          "line": 299
+          "column": 37,
+          "index": 1573,
+          "line": 48
         },
         "start": {
-          "column": 1,
-          "index": 9028,
-          "line": 299
+          "column": 37,
+          "index": 1573,
+          "line": 48
         }
       }
     }

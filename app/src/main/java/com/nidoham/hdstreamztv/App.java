@@ -46,7 +46,7 @@ public class App extends Application {
             instance = this;
             appContext = getApplicationContext();
         }
-        currentLocale = new Locale("en", "BD"); // Default to Bangladesh (English)
+        currentLocale = new Locale("bn", "BD"); // Default to Bangladesh (English)
 
         // Initialize the application
         initializeApplication();
