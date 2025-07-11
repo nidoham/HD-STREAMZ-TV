@@ -11,7 +11,6 @@ import android.widget.Toast;
 
 import com.nidoham.hdstreamztv.PlayerActivity;
 import com.nidoham.hdstreamztv.R;
-import com.nidoham.hdstreamztv.example.data.link.youtube.YouTube;
 import com.nidoham.hdstreamztv.model.ChannelUrl;
 import com.nidoham.hdstreamztv.template.model.settings.Template;
 

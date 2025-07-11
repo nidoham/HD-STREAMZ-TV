@@ -1,50 +1,20 @@
 {
   "allFiles": [
     {
-      "file": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/fragment/TrendingFragment.java",
+      "file": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/PlayerActivity.java",
       "selection": {
         "end": {
-          "column": 18,
-          "index": 1153,
-          "line": 31
+          "column": 0,
+          "index": 50748,
+          "line": 1382
         },
         "start": {
-          "column": 17,
-          "index": 1152,
-          "line": 31
-        }
-      }
-    },
-    {
-      "file": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/fragment/YouTubeFragment.java",
-      "selection": {
-        "end": {
-          "column": 62,
-          "index": 33261,
-          "line": 866
-        },
-        "start": {
-          "column": 62,
-          "index": 33261,
-          "line": 866
-        }
-      }
-    },
-    {
-      "file": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/App.java",
-      "selection": {
-        "end": {
-          "column": 37,
-          "index": 1573,
-          "line": 48
-        },
-        "start": {
-          "column": 37,
-          "index": 1573,
-          "line": 48
+          "column": 0,
+          "index": 50748,
+          "line": 1382
         }
       }
     }
   ],
-  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/App.java"
+  "selectedFile": "/storage/emulated/0/AndroidIDEProjects/HD-STREAMZ-TV/app/src/main/java/com/nidoham/hdstreamztv/PlayerActivity.java"
 }

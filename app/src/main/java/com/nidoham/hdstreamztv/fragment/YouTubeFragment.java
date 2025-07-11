@@ -36,7 +36,6 @@ import androidx.fragment.app.Fragment;
 
 import com.nidoham.hdstreamztv.PlayerActivity;
 import com.nidoham.hdstreamztv.databinding.FragmentYoutubeBinding;
-import com.nidoham.hdstreamztv.example.data.link.youtube.YouTube;
 import com.nidoham.hdstreamztv.template.model.settings.Template;
 
 import org.schabi.newpipe.extractor.ServiceList;

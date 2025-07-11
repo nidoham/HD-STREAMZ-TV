@@ -23,6 +23,7 @@ import com.nidoham.hdstreamztv.R;
 import com.nidoham.hdstreamztv.adapter.VideoAdapter;
 import com.nidoham.hdstreamztv.databinding.FragmentTrendingBinding;
 import com.nidoham.hdstreamztv.model.VideoItem;
+import com.nidoham.hdstreamztv.model.VideoQuality;
 import com.nidoham.hdstreamztv.util.NetworkUtils;
 
 import org.schabi.newpipe.extractor.Image;
@@ -30,7 +31,6 @@ import org.schabi.newpipe.extractor.ServiceList;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.schabi.newpipe.extractor.stream.VideoStream;
-
 import org.schabi.newpipe.util.ExtractorHelper;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
@@ -39,7 +39,9 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoItemClickListener, TrendingVideosExecutor.Listener {
 
@@ -58,8 +60,6 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
     // State Management
     private final ArrayList<VideoItem> videoList = new ArrayList<>();
     private boolean isLoading = false;
-
-    // --- Lifecycle Methods ---
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -106,11 +106,8 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
             executor.dispose(); // Clean up executor subscriptions
         }
         compositeDisposable.clear(); // Clean up RxJava subscriptions
-        // Nullify the binding object to prevent memory leaks
         binding = null;
     }
-
-    // --- Initialization ---
 
     private void setupRecyclerView() {
         videoAdapter = new VideoAdapter(videoList, this);
@@ -124,7 +121,7 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
-                if (dy > 0) { // Only load more when scrolling down
+                if (dy > 0) {
                     LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
                     if (layoutManager != null && layoutManager.findLastCompletelyVisibleItemPosition() >= videoAdapter.getItemCount() - 2) {
                         loadMoreVideos();
@@ -133,8 +130,6 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
             }
         });
     }
-
-    // --- Data Loading ---
 
     private void loadInitialVideos(boolean forceRefresh) {
         if (isLoading || !isNetworkAvailable()) return;
@@ -145,8 +140,6 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
         if (isLoading || !isNetworkAvailable()) return;
         executor.fetchMoreVideos();
     }
-
-    // --- TrendingVideosExecutor.Listener Callbacks ---
 
     @Override
     public void showLoading(boolean isLoading) {
@@ -187,7 +180,6 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
         binding.swipeRefreshLayout.setRefreshing(false);
         binding.progressBar.setVisibility(View.GONE);
         binding.recyclerViewTrending.setVisibility(View.GONE);
-        // Since no empty state container exists, show a Toast
         showToast("No videos available");
     }
 
@@ -205,8 +197,6 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
         }
     }
 
-    // --- UI State Management ---
-
     private void showContentState() {
         if (binding == null) return;
         binding.swipeRefreshLayout.setRefreshing(false);
@@ -214,26 +204,13 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
         binding.recyclerViewTrending.setVisibility(View.VISIBLE);
     }
 
-    // --- Helper Methods ---
-
-    private boolean isNetworkAvailable() {
-        Context context = getContext();
-        if (context != null && !NetworkUtils.isNetworkAvailable(context)) {
-            showError("No network connection available");
-            return false;
-        }
-        return true;
-    }
-
     private List<VideoItem> processItems(List<StreamInfoItem> items) {
         List<VideoItem> processedVideos = new ArrayList<>();
         if (items == null) return processedVideos;
 
         for (StreamInfoItem item : items) {
-            // Extract fields from StreamInfoItem and create VideoItem using the provided constructor
             String title = item.getName() != null ? item.getName() : "";
             String uploader = item.getUploaderName() != null ? item.getUploaderName() : "";
-            // Use getThumbnails() to get the first thumbnail URL, if available
             String thumbnailUrl = "";
             List<Image> thumbnails = item.getThumbnails();
             if (thumbnails != null && !thumbnails.isEmpty()) {
@@ -259,14 +236,10 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
         }
     }
 
-    // --- Video Item Click Handler ---
-
     @Override
     public void onVideoItemClick(@NonNull VideoItem videoItem) {
         handleStreamExtraction(videoItem.getVideoUrl());
     }
-
-    // --- Stream Extraction and Quality Selection ---
 
     private void handleStreamExtraction(final String url) {
         if (!isAdded() || getContext() == null) {
@@ -284,33 +257,10 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
         int serviceId = ServiceList.YouTube.getServiceId();
 
         Disposable disposable = ExtractorHelper.getStreamInfo(serviceId, url, true)
-                .subscribeOn(Schedulers.io()) // Background thread for network/extraction
-                .observeOn(AndroidSchedulers.mainThread()) // Main thread for UI updates
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
-                        streamInfo -> {
-                            if (!isAdded() || getContext() == null) {
-                                Log.w(TAG, "Fragment no longer active, ignoring stream info result");
-                                return;
-                            }
-
-                            if (streamInfo == null) {
-                                showToast("Stream info is null. This video might not be supported.");
-                                return;
-                            }
-
-                            List<VideoStream> videoStreams = streamInfo.getVideoStreams();
-                            if (videoStreams == null || videoStreams.isEmpty()) {
-                                showToast("No video streams available for this video.");
-                                return;
-                            }
-
-                            try {
-                                handleStreamInfoReceived(streamInfo);
-                            } catch (Exception e) {
-                                Log.e(TAG, "Error processing stream data", e);
-                                showToast("Error processing video data: " + e.getMessage());
-                            }
-                        },
+                        this::handleStreamInfoReceived,
                         throwable -> {
                             Log.e(TAG, "Failed to extract stream info", throwable);
                             if (isAdded() && getContext() != null) {
@@ -325,7 +275,6 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
                         }
                 );
 
-        // Add to composite disposable for proper cleanup
         compositeDisposable.add(disposable);
     }
 
@@ -333,22 +282,80 @@ public class TrendingFragment extends Fragment implements VideoAdapter.OnVideoIt
         Context context = getContext();
         if (context == null) return;
 
-        List<VideoStream> videoStreams = streamInfo.getVideoStreams();
-        // Select the first available video stream (or implement quality selection logic)
-        VideoStream selectedStream = videoStreams != null && !videoStreams.isEmpty() ? videoStreams.get(0) : null;
-        if (selectedStream == null) {
-            showToast("No playable video stream found.");
+        if (streamInfo == null) {
+            showToast("Stream info is null. This video might not be supported.");
             return;
         }
 
-        String videoUrl = selectedStream.getUrl();
-        String videoTitle = streamInfo.getName() != null ? streamInfo.getName() : "Unknown Title";
+        List<VideoStream> videoStreams = streamInfo.getVideoStreams();
+        if (videoStreams == null || videoStreams.isEmpty()) {
+            showToast("No video streams available for this video.");
+            return;
+        }
 
+        // Create a map to store all quality streams
+        Map<String, String> qualityUrlMap = new LinkedHashMap<>();
+        
+        // Store all video qualities and their URLs
+        for (VideoStream stream : videoStreams) {
+            String quality = stream.getResolution();
+            String streamUrl = stream.getUrl();
+            if (quality != null && !quality.isEmpty() && streamUrl != null && !streamUrl.isEmpty()) {
+                qualityUrlMap.put(quality, streamUrl);
+            }
+        }
+
+        if (qualityUrlMap.isEmpty()) {
+            showToast("No valid quality options available.");
+            return;
+        }
+
+        // Create intent and pass video information
         Intent intent = new Intent(context, PlayerActivity.class);
-        intent.putExtra(IntentKeys.EXTRA_VIDEO_NAME, videoTitle); // Fixed: title, not URL
-        intent.putExtra(IntentKeys.EXTRA_VIDEO_URL, videoUrl); // Fixed: URL, not title
+        
+        // Basic video information
+        String videoTitle = streamInfo.getName() != null ? streamInfo.getName() : "Unknown Title";
+        intent.putExtra(IntentKeys.EXTRA_VIDEO_NAME, videoTitle);
         intent.putExtra(IntentKeys.EXTRA_VIDEO_CATEGORY, IntentKeys.EXTRA_KIOSK_YOUTUBE);
-        intent.putExtra(IntentKeys.EXTRA_VIDEO_QUALITY, selectedStream.getUrl()); // Use stream URL for quality
+
+        // Convert quality map to ArrayList of VideoQuality objects
+        ArrayList<VideoQuality> videoQualities = new ArrayList<>();
+        for (Map.Entry<String, String> entry : qualityUrlMap.entrySet()) {
+            videoQualities.add(new VideoQuality(entry.getKey(), entry.getValue()));
+        }
+        
+        // Add HLS stream if available
+        String hlsUrl = streamInfo.getHlsUrl();
+        if (hlsUrl != null && !hlsUrl.isEmpty()) {
+            intent.putExtra(IntentKeys.EXTRA_HLS_URL, hlsUrl);
+        }
+
+        // Add all video qualities
+        intent.putExtra(IntentKeys.EXTRA_VIDEO_QUALITIES, videoQualities);
+        
+        // Add additional metadata
+        if (streamInfo.getDuration() > 0) {
+            intent.putExtra(IntentKeys.EXTRA_VIDEO_DURATION, streamInfo.getDuration());
+        }
+        if (streamInfo.getUploaderName() != null) {
+            intent.putExtra(IntentKeys.EXTRA_UPLOADER_NAME, streamInfo.getUploaderName());
+        }
+        if (streamInfo.getViewCount() > 0) {
+            intent.putExtra(IntentKeys.EXTRA_VIEW_COUNT, streamInfo.getViewCount());
+        }
+        if (streamInfo.getThumbnails() != null && !streamInfo.getThumbnails().isEmpty()) {
+            intent.putExtra(IntentKeys.EXTRA_THUMBNAIL_URL, streamInfo.getThumbnails().get(0).getUrl());
+        }
+        
         context.startActivity(intent);
+    }
+
+    private boolean isNetworkAvailable() {
+        Context context = getContext();
+        if (context != null && !NetworkUtils.isNetworkAvailable(context)) {
+            showError("No network connection available");
+            return false;
+        }
+        return true;
     }
 }

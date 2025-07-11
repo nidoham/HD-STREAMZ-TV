@@ -17,11 +17,21 @@ public class IntentKeys {
     private static final int SEEK_BAR_MAX_PRECISION = 1000;
     private static final int MAX_RETRY_ATTEMPTS = 3;
     
-    // Intent Keys
+    // Basic Intent Keys
     public static final String EXTRA_VIDEO_URL = "link";
     public static final String EXTRA_VIDEO_NAME = "name";
     public static final String EXTRA_VIDEO_CATEGORY = "category";
     public static final String EXTRA_VIDEO_QUALITY = "quality";
+    
+    // New Video Quality Intent Keys
+    public static final String EXTRA_VIDEO_QUALITIES = "extra_video_qualities";
+    public static final String EXTRA_HLS_URL = "extra_hls_url";
+    
+    // Additional Metadata Keys
+    public static final String EXTRA_VIDEO_DURATION = "extra_video_duration";
+    public static final String EXTRA_UPLOADER_NAME = "extra_uploader_name";
+    public static final String EXTRA_VIEW_COUNT = "extra_view_count";
+    public static final String EXTRA_THUMBNAIL_URL = "extra_thumbnail_url";
     
     // State Save Keys
     private static final String SAVED_PLAYBACK_POSITION = "playback_position";
