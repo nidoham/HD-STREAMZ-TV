@@ -142,7 +142,7 @@ public class ReCaptchaActivity extends AppCompatActivity {
     private void saveCookiesAndFinish() {
         // try to get cookies of unclosed page
         handleCookiesFromUrl(recaptchaBinding.reCaptchaWebView.getUrl());
-        if (MainActivity.DEBUG) {
+        if (App.DEBUG) {
             Log.d(TAG, "saveCookiesAndFinish: foundCookies=" + foundCookies);
         }
 
@@ -168,7 +168,7 @@ public class ReCaptchaActivity extends AppCompatActivity {
 
 
     private void handleCookiesFromUrl(@Nullable final String url) {
-        if (MainActivity.DEBUG) {
+        if (App.DEBUG) {
             Log.d(TAG, "handleCookiesFromUrl: url=" + (url == null ? "null" : url));
         }
 
@@ -187,7 +187,7 @@ public class ReCaptchaActivity extends AppCompatActivity {
             try {
                 handleCookies(Utils.decodeUrlUtf8(url.substring(abuseStart + 13, abuseEnd)));
             } catch (final StringIndexOutOfBoundsException e) {
-                if (MainActivity.DEBUG) {
+                if (App.DEBUG) {
                     Log.e(TAG, "handleCookiesFromUrl: invalid google abuse starting at "
                             + abuseStart + " and ending at " + abuseEnd + " for url " + url, e);
                 }
@@ -196,7 +196,7 @@ public class ReCaptchaActivity extends AppCompatActivity {
     }
 
     private void handleCookies(@Nullable final String cookies) {
-        if (MainActivity.DEBUG) {
+        if (App.DEBUG) {
             Log.d(TAG, "handleCookies: cookies=" + (cookies == null ? "null" : cookies));
         }
 

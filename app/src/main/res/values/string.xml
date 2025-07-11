@@ -1,26 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">STREAMLY</string>
-    
+
     <!-- Channel Information -->
     <string name="channel_logo">Channel Logo</string>
 
-    <!-- Tab titles -->
-    <string name="tab_home_title">Home</string>
-    <string name="tab_tv_title">TV</string>
-    <string name="tab_cloud_title">Cloud</string>
-    <string name="tab_guest_title">Guest</string>
-    
+    <string name="tab_home">Home</string>
+    <string name="desc_home_icon">Navigate to Home Screen</string>
+
+    <string name="tab_tv">TV</string>
+    <string name="desc_tv_icon">Browse Live TV Channels</string>
+
+    <string name="tab_youtube">YouTube</string>
+    <string name="desc_youtube_icon">Watch YouTube Videos</string>
+
+    <string name="tab_events">Trading</string>
+    <string name="desc_events_icon">Explore Upcoming Events</string>
+
     <!-- Tab descriptions for accessibility -->
     <string name="tab_home_description">Home tab - Main content</string>
     <string name="tab_tv_description">TV tab - Television content</string>
     <string name="tab_cloud_description">Cloud tab - Cloud services</string>
     <string name="tab_guest_description">Guest tab - Guest features</string>
-    
+
     <!-- Action button descriptions -->
     <string name="action_search_description">Search content</string>
     <string name="action_notifications_description">View notifications</string>
-    
+
     <!-- Messages -->
     <string name="permissions_required_message">Required permissions are needed for the app to function properly</string>
     <string name="no_network_connection">No network connection available</string>
@@ -28,11 +34,11 @@
     <!-- Content descriptions for accessibility -->
     <string name="content_description_search">Search</string>
     <string name="content_description_notifications">Notifications</string>
-    
+
     <!-- Channel Error -->
     <string name="no_channels_available">No Channel</string>
-    
-    
+
+
     <!-- Placeholder Text -->
     <string name="live_channel_title_placeholder">Live Channel Name</string>
     <string name="player_indicator_placeholder">50%</string>
@@ -48,7 +54,7 @@
     <string name="content_description_resize_mode">Change video resize mode</string>
     <string name="content_description_brightness_icon">Brightness icon</string>
     <string name="content_description_volume_icon">Volume icon</string>
-    
+
     <!-- Add these strings for the player layout -->
     <string name="resize_screen">Resize Screen</string>
     <string name="rewind_10_seconds">Rewind 10 seconds</string>
@@ -56,5 +62,5 @@
     <string name="lock_screen">Lock Screen</string>
     <string name="liv_logo">LIV Logo</string>
     <string name="enter_fullscreen">Enter Fullscreen</string>
-    
+
 </resources>
