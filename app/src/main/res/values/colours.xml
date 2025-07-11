@@ -83,5 +83,11 @@
     <color name="gray">#616161</color>
 
     <color name="black">#000</color>
+    
+    <!-- Video item colors -->
+    <color name="text_secondary">#666666</color>
+    <color name="text_tertiary">#999999</color>
+    <color name="thumbnail_background">#F5F5F5</color>
+    <color name="trending_color">#FF6B35</color>
 
 </resources>

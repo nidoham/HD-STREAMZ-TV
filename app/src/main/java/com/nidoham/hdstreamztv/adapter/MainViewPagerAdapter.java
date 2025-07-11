@@ -29,7 +29,7 @@ public class MainViewPagerAdapter extends FragmentStateAdapter {
             case 2:
                 return new YouTubeFragment();
             case 3:
-                return new FavoriteFragment();
+                return new TrendingFragment();
             default:
                 // This should never happen, but it's good practice to have a default
                 return new EventsFragment();
